@@ -1,6 +1,7 @@
 #include <vkhr/rasterizer/hair_style.hh>
 
 #include <vkhr/rasterizer.hh>
+#include <vkrhr/v_ray_tracer.hh>
 
 #include <vkhr/scene_graph/camera.hh>
 #include <vkhr/scene_graph/light_source.hh>
@@ -11,6 +12,11 @@ namespace vkhr {
     namespace vulkan {
         HairStyle::HairStyle(const vkhr::HairStyle& hair_style,
                              vkhr::Rasterizer& vulkan_renderer) {
+            load(hair_style, vulkan_renderer);
+        }
+
+        HairStyle::HairStyle(const vkhr::HairStyle& hair_style,
+            vkrhr::V_Raytracer& vulkan_renderer) {
             load(hair_style, vulkan_renderer);
         }
 
@@ -69,6 +75,8 @@ namespace vkhr {
                 vulkan_renderer.device,
                 parameters
             };
+
+
 
             vk::DebugMarker::object_name(vulkan_renderer.device, parameter_buffer, VK_OBJECT_TYPE_BUFFER, "Hair Parameters Buffer", id);
 
@@ -138,6 +146,139 @@ namespace vkhr {
             vk::DebugMarker::object_name(vulkan_renderer.device, tangent_view, VK_OBJECT_TYPE_IMAGE_VIEW, "Hair Tangent View", id);
 
             volume = Volume {
+                *this,
+                vulkan_renderer
+            };
+
+            ++id;
+        }
+
+        void HairStyle::load(const vkhr::HairStyle& hair_style,
+            vkrhr::V_Raytracer& vulkan_renderer) {
+            vertices = vk::VertexBuffer{
+                vulkan_renderer.m_device,
+                vulkan_renderer.m_command_pool,
+                hair_style.get_vertices()
+            };
+
+            vk::DebugMarker::object_name(vulkan_renderer.m_device, vertices, VK_OBJECT_TYPE_BUFFER, "Hair Position Vertex Buffer", id);
+            vk::DebugMarker::object_name(vulkan_renderer.m_device, vertices.get_device_memory(), VK_OBJECT_TYPE_DEVICE_MEMORY,
+                "Hair Position Device Memory", id);
+
+            tangents = vk::VertexBuffer{
+                vulkan_renderer.m_device,
+                vulkan_renderer.m_command_pool,
+                hair_style.get_tangents()
+            };
+
+            vk::DebugMarker::object_name(vulkan_renderer.m_device, tangents, VK_OBJECT_TYPE_BUFFER, "Hair Tangent Vertex Buffer", id);
+            vk::DebugMarker::object_name(vulkan_renderer.m_device, tangents.get_device_memory(), VK_OBJECT_TYPE_DEVICE_MEMORY,
+                "Hair Tangent Device Memory", id);
+
+            thickness = vk::VertexBuffer{
+                vulkan_renderer.m_device,
+                vulkan_renderer.m_command_pool,
+                hair_style.get_thickness()
+            };
+
+            vk::DebugMarker::object_name(vulkan_renderer.m_device, thickness, VK_OBJECT_TYPE_BUFFER, "Hair Thickness Vertex Buffer", id);
+            vk::DebugMarker::object_name(vulkan_renderer.m_device, thickness.get_device_memory(), VK_OBJECT_TYPE_DEVICE_MEMORY,
+                "Hair Thickness Device Memory", id);
+
+            segments = vk::IndexBuffer{
+                vulkan_renderer.m_device,
+                vulkan_renderer.m_command_pool,
+                hair_style.get_indices()
+            };
+
+            vk::DebugMarker::object_name(vulkan_renderer.m_device, segments, VK_OBJECT_TYPE_BUFFER, "Hair Index Buffer", id);
+            vk::DebugMarker::object_name(vulkan_renderer.m_device, segments.get_device_memory(), VK_OBJECT_TYPE_DEVICE_MEMORY,
+                "Hair Index Device Memory", id);
+
+            parameters.hair_shininess = 80.0f; // Using Kajiya-Kay.
+            parameters.strand_radius = hair_style.get_default_thickness();
+            parameters.hair_opacity = hair_style.get_default_transparency();
+            parameters.strand_ratio = 1.00f; // i.e. don't reduce strands.
+            parameters.hair_color = hair_style.get_default_color();
+
+            parameters.volume_resolution = glm::vec3{ 256,256,256 };
+            parameters.volume_bounds = hair_style.get_bounding_box();
+
+            parameter_buffer = vk::UniformBuffer{
+                vulkan_renderer.m_device,
+                parameters
+            };
+
+
+
+            vk::DebugMarker::object_name(vulkan_renderer.m_device, parameter_buffer, VK_OBJECT_TYPE_BUFFER, "Hair Parameters Buffer", id);
+
+            auto strand_volume = hair_style.voxelize_segments(256, 256, 256);
+
+            strand_volume.normalize();
+
+            density_sampler = vk::Sampler{
+                vulkan_renderer.m_device,
+                VK_FILTER_LINEAR,      VK_FILTER_LINEAR,
+                VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+                VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+                VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER
+            };
+
+            vk::DebugMarker::object_name(vulkan_renderer.m_device, density_sampler, VK_OBJECT_TYPE_SAMPLER, "Hair Density Sampler", id);
+
+            VkDeviceSize density_length = parameters.volume_resolution.x *
+                parameters.volume_resolution.y *
+                parameters.volume_resolution.z *
+                sizeof(unsigned char); // bytes.
+
+            density_volume = vk::DeviceImage{
+                vulkan_renderer.m_device,
+                static_cast<std::uint32_t>(parameters.volume_resolution.x),
+                static_cast<std::uint32_t>(parameters.volume_resolution.y),
+                static_cast<std::uint32_t>(parameters.volume_resolution.z),
+                vulkan_renderer.m_command_pool,
+                strand_volume.densities
+            };
+
+            vk::DebugMarker::object_name(vulkan_renderer.m_device, density_volume, VK_OBJECT_TYPE_IMAGE, "Hair Density Volume", id);
+
+            density_view = vk::ImageView{
+                vulkan_renderer.m_device,
+                density_volume
+            };
+
+            vk::DebugMarker::object_name(vulkan_renderer.m_device, density_view, VK_OBJECT_TYPE_IMAGE_VIEW, "Hair Density View", id);
+
+            tangent_sampler = vk::Sampler{
+                vulkan_renderer.m_device,
+                VK_FILTER_LINEAR,      VK_FILTER_LINEAR,
+                VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+                VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+                VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER
+            };
+
+            vk::DebugMarker::object_name(vulkan_renderer.m_device, tangent_sampler, VK_OBJECT_TYPE_SAMPLER, "Hair Tangent Sampler", id);
+
+            tangent_volume = vk::DeviceImage{
+                vulkan_renderer.m_device,
+                static_cast<std::uint32_t>(parameters.volume_resolution.x),
+                static_cast<std::uint32_t>(parameters.volume_resolution.y),
+                static_cast<std::uint32_t>(parameters.volume_resolution.z),
+                vulkan_renderer.m_command_pool,
+                strand_volume.tangents
+            };
+
+            vk::DebugMarker::object_name(vulkan_renderer.m_device, tangent_volume, VK_OBJECT_TYPE_IMAGE, "Hair Tangent Volume", id);
+
+            tangent_view = vk::ImageView{
+                vulkan_renderer.m_device,
+                tangent_volume
+            };
+
+            vk::DebugMarker::object_name(vulkan_renderer.m_device, tangent_view, VK_OBJECT_TYPE_IMAGE_VIEW, "Hair Tangent View", id);
+
+            volume = Volume{
                 *this,
                 vulkan_renderer
             };

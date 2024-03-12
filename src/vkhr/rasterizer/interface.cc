@@ -4,6 +4,7 @@
 #include <vkhr/scene_graph.hh>
 #include <vkhr/rasterizer.hh>
 
+#include <vkrhr/v_ray_tracer.hh>
 // TODO: wipe when light knobs done!
 #include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -29,6 +30,13 @@ namespace vkhr {
         ctx = ImGui::CreateContext();
         ImGui_ImplGlfw_InitForVulkan(window.get_handle(), false);
         load(*vulkan_renderer);
+    }
+
+    Interface::Interface(Window& window, vkrhr::V_Raytracer* raytracer) {
+        IMGUI_CHECKVERSION();
+        ctx = ImGui::CreateContext();
+        ImGui_ImplGlfw_InitForVulkan(window.get_handle(), false);
+        load(*raytracer);
     }
 
     Interface::~Interface() noexcept {
@@ -69,6 +77,36 @@ namespace vkhr {
         default_parameters();
     }
 
+    void Interface::load(vkrhr::V_Raytracer& raytracer) {
+        ImGui_ImplVulkan_InitInfo init_info;
+
+        init_info.Instance = raytracer.m_instance.get_handle();
+        init_info.PhysicalDevice = raytracer.m_physical_device.get_handle();
+        init_info.Device = raytracer.m_device.get_handle();
+        init_info.QueueFamily = raytracer.m_physical_device.get_graphics_queue_family_index();
+        init_info.Queue = raytracer.m_device.get_graphics_queue().get_handle();
+        init_info.PipelineCache = VK_NULL_HANDLE;
+        init_info.DescriptorPool = raytracer.m_descriptor_pool.get_handle();
+        init_info.Allocator = nullptr;
+        init_info.CheckVkResultFn = imgui_debug_callback;
+
+        ImGui_ImplVulkan_Init(&init_info, raytracer.m_imgui_pass.get_handle());
+
+        ImGui::StyleColorsDark();
+        auto& style = ImGui::GetStyle();
+        make_custom_style(style);
+
+        auto command_buffer = raytracer.m_command_pool.allocate_and_begin();
+        ImGui_ImplVulkan_CreateFontsTexture(command_buffer.get_handle());
+        command_buffer.end();
+
+        raytracer.m_device.get_graphics_queue().submit(command_buffer)
+            .wait_idle();
+        ImGui_ImplVulkan_InvalidateFontUploadObjects();
+
+        default_parameters();
+    }
+
     void Interface::default_parameters() {
         renderers.clear();
         simulations.clear();
@@ -79,6 +117,7 @@ namespace vkhr {
         renderers.push_back("Ray Tracer");
         renderers.push_back("Raymarcher");
         renderers.push_back("Hybrid LoD");
+        renderers.push_back("Vulkan Ray Tracer");
 
         scene_files.push_back(SCENE("ponytail.vkhr"));
         scene_files.push_back(SCENE("bear.vkhr"));
@@ -532,7 +571,7 @@ namespace vkhr {
     }
 
     bool Interface::rasterizer_enabled(float level_of_detail) {
-        return current_renderer == Renderer::Rasterizer || (current_renderer == Renderer::Hybrid_LoD && level_of_detail != 1.0);
+        return current_renderer == Renderer::Rasterizer || (current_renderer == Renderer::Hybrid_LoD && level_of_detail != 1.0) || current_renderer == Renderer::Vulkan_RayTracer;
     }
 
     bool Interface::raymarcher_enabled(float level_of_detail) {

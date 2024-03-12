@@ -64,7 +64,7 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <AdditionalOptions>/openmp /Zc:twoPhase- %(AdditionalOptions)</AdditionalOptions>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
     </ClCompile>
     <Link>
@@ -89,7 +89,7 @@
       <StringPooling>true</StringPooling>
       <FloatingPointModel>Fast</FloatingPointModel>
       <AdditionalOptions>/openmp /Zc:twoPhase- %(AdditionalOptions)</AdditionalOptions>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
     </ClCompile>
     <Link>
@@ -429,6 +429,7 @@
     <ClInclude Include="..\include\vkpp\swap_chain.hh" />
     <ClInclude Include="..\include\vkpp\version.hh" />
     <ClInclude Include="..\include\vkpp\vkpp.hh" />
+    <ClInclude Include="..\include\vkrhr\v_ray_tracer.hh" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\foreign\imgui\examples\imgui_impl_glfw.cpp" />
@@ -501,6 +502,7 @@
     <ClCompile Include="..\src\vkpp\surface.cc" />
     <ClCompile Include="..\src\vkpp\swap_chain.cc" />
     <ClCompile Include="..\src\vkpp\version.cc" />
+    <ClCompile Include="..\src\vkrhr\v_ray_tracer.cc" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\share\scenes\bear.vkhr" />

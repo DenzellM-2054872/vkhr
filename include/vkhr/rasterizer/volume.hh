@@ -12,7 +12,13 @@
 #include <vkpp/descriptor_set.hh>
 #include <vkpp/pipeline.hh>
 
+namespace vkrhr
+{
+    class V_Raytracer;
+}
+
 namespace vk = vkpp;
+
 
 namespace vkhr {
     class Rasterizer;
@@ -21,10 +27,12 @@ namespace vkhr {
         class Volume : public Drawable {
         public:
             Volume(HairStyle& hair_style, vkhr::Rasterizer& vk_renderer);
+            Volume(HairStyle& hair_style, vkrhr::V_Raytracer& vk_renderer);
 
             Volume() = default;
 
             void load(HairStyle& hair_style, vkhr::Rasterizer& renderer);
+            void load(HairStyle& hair_style, vkrhr::V_Raytracer& renderer);
 
             void set_current_volume(vk::ImageView& density_view, vk::ImageView& tangent_view);
             void set_volume_parameters(vk::UniformBuffer& buffer);

@@ -9,6 +9,8 @@
 #include <vkhr/benchmark.hh>
 #include <vkhr/ray_tracer.hh>
 
+
+#include<vkrhr/v_ray_tracer.hh>
 #include <glm/glm.hpp>
 
 int main(int argc, char** argv) {
@@ -24,8 +26,6 @@ int main(int argc, char** argv) {
         height = argp["y"].value.integer;
 
     camera.set_resolution(width, height);
-
-    vkhr::Raytracer ray_tracer { scene_graph };
 
     const vkhr::Image vulkan_icon { IMAGE("vulkan_icon.png") };
     vkhr::Window window { width, height, "VKHR", vulkan_icon };
@@ -50,7 +50,10 @@ int main(int argc, char** argv) {
     input_map.bind("rotate_light", vkhr::Input::Key::L);
     input_map.bind("recompile", vkhr::Input::Key::R);
 
+    vkhr::Raytracer ray_tracer{ scene_graph };
     vkhr::Rasterizer rasterizer { window, scene_graph };
+    //vkrhr::V_Raytracer v_raytacer { window, scene_graph };
+
 
     if (argp["ui"].value.boolean == 0)
         rasterizer.get_imgui().hide();

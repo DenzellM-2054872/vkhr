@@ -12,6 +12,11 @@
 
 #include <cstdint>
 
+namespace vkrhr
+{
+    class V_Raytracer;
+}
+
 namespace vk = vkpp;
 
 namespace vkhr {
@@ -21,14 +26,27 @@ namespace vkhr {
         public:
             DepthMap(const std::uint32_t width, Rasterizer& vulkan_renderer,
                       const LightSource& light_source);
-            DepthMap(const std::uint32_t width,   const std::uint32_t height,
-                      Rasterizer& vulkan_renderer, const LightSource& light_source);
+
+            DepthMap(const std::uint32_t width, vkrhr::V_Raytracer& vulkan_renderer,
+                const LightSource& light_source);
+
+            //DepthMap(const std::uint32_t width,   const std::uint32_t height,
+            //          Rasterizer& vulkan_renderer, const LightSource& light_source);
+
+            //DepthMap(const std::uint32_t width, const std::uint32_t height,
+            //    vkrhr::V_Raytracer& vulkan_renderer, const LightSource* light_source);
+
             DepthMap(const std::uint32_t width,   const std::uint32_t height,
                       Rasterizer& vulkan_renderer, const LightSource* light_source = nullptr);
+
+            DepthMap(const std::uint32_t width, const std::uint32_t height,
+                vkrhr::V_Raytracer& vulkan_renderer, const LightSource* light_source = nullptr);
 
             DepthMap() = default;
 
             DepthMap(Rasterizer& vulkan_renderer);
+
+            DepthMap(vkrhr::V_Raytracer& vulkan_renderer);
 
             void update_dynamic_viewport_scissor_depth(vk::CommandBuffer& cb);
 

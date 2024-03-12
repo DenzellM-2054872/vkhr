@@ -127,6 +127,12 @@
     <Filter Include="src\vkpp">
       <UniqueIdentifier>{BDB938CF-A986-93DA-D29F-8182BECBC868}</UniqueIdentifier>
     </Filter>
+    <Filter Include="include\vkrhr">
+      <UniqueIdentifier>{c1151816-1f53-4360-8f47-5780fa463547}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\vkrhr">
+      <UniqueIdentifier>{baec8c7e-76d8-49ed-a620-b1320eaad86b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\foreign\embree\include\embree3\rtcore.h">
@@ -1110,6 +1116,9 @@
     <ClInclude Include="..\include\vkpp\vkpp.hh">
       <Filter>include\vkpp</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\vkrhr\v_ray_tracer.hh">
+      <Filter>include\vkrhr</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\foreign\imgui\examples\imgui_impl_glfw.cpp">
@@ -1279,6 +1288,9 @@
     </ClCompile>
     <ClCompile Include="..\src\vkpp\version.cc">
       <Filter>src\vkpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\vkrhr\v_ray_tracer.cc">
+      <Filter>src\vkrhr</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

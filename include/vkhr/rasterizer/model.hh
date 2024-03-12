@@ -12,6 +12,11 @@
 #include <vkpp/descriptor_set.hh>
 #include <vkpp/pipeline.hh>
 
+namespace vkrhr
+{
+    class V_Raytracer;
+}
+
 namespace vk = vkpp;
 
 namespace vkhr {
@@ -22,10 +27,16 @@ namespace vkhr {
             Model(const vkhr::Model& wavefront_model,
                   vkhr::Rasterizer& vulkan_renderer);
 
+            Model(const vkhr::Model& wavefront_model,
+                vkrhr::V_Raytracer& vulkan_renderer);
+
             Model() = default;
 
             void load(const vkhr::Model& wavefront_model,
                       vkhr::Rasterizer& vulkan_renderer);
+
+            void load(const vkhr::Model& wavefront_model,
+                vkrhr::V_Raytracer& vulkan_renderer);
 
             void draw(Pipeline& pipeline,
                       vk::DescriptorSet& descriptor_set,

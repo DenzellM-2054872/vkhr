@@ -8,9 +8,16 @@
 
 #include <vkpp/debug_marker.hh>
 
+#include <vkrhr/v_ray_tracer.hh>
+
 namespace vkhr {
     namespace vulkan {
         Volume::Volume(HairStyle& hair_style, vkhr::Rasterizer& vulkan_renderer) {
+            load(hair_style, vulkan_renderer);
+        }
+
+        Volume::Volume(HairStyle& hair_style, vkrhr::V_Raytracer& vulkan_renderer)
+        {
             load(hair_style, vulkan_renderer);
         }
 
@@ -39,6 +46,37 @@ namespace vkhr {
             vk::DebugMarker::object_name(vulkan_renderer.device, elements, VK_OBJECT_TYPE_BUFFER, "Volume Index Buffer", id);
             vk::DebugMarker::object_name(vulkan_renderer.device, elements.get_device_memory(), VK_OBJECT_TYPE_DEVICE_MEMORY,
                                          "Volume Index Device Memory", id);
+
+            ++id;
+        }
+
+        void Volume::load(HairStyle& hair_style, vkrhr::V_Raytracer& vulkan_renderer)
+        {
+            //TODO this might need to  be difrent
+            AABB aabb{ hair_style.parameters.volume_bounds };
+            auto cube_vertices = generate_aabb_vertices(aabb);
+
+            vertices = vk::VertexBuffer{
+                vulkan_renderer.m_device,
+                vulkan_renderer.m_command_pool,
+                cube_vertices
+            };
+
+            vk::DebugMarker::object_name(vulkan_renderer.m_device, vertices, VK_OBJECT_TYPE_BUFFER, "Volume Vertex Buffer", id);
+            vk::DebugMarker::object_name(vulkan_renderer.m_device, vertices.get_device_memory(), VK_OBJECT_TYPE_DEVICE_MEMORY,
+                "Volume Vertex Device Memory", id);
+
+            auto cube_elements = generate_aabb_elements();
+
+            elements = vk::IndexBuffer{
+                vulkan_renderer.m_device,
+                vulkan_renderer.m_command_pool,
+                cube_elements
+            };
+
+            vk::DebugMarker::object_name(vulkan_renderer.m_device, elements, VK_OBJECT_TYPE_BUFFER, "Volume Index Buffer", id);
+            vk::DebugMarker::object_name(vulkan_renderer.m_device, elements.get_device_memory(), VK_OBJECT_TYPE_DEVICE_MEMORY,
+                "Volume Index Device Memory", id);
 
             ++id;
         }

@@ -15,6 +15,7 @@
 
 namespace vkhr {
     class Raytracer;
+    class V_Raytracer;
     namespace embree {
         class HairStyle final : public Shadable {
         public:

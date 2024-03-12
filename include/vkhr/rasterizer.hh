@@ -77,8 +77,7 @@ namespace vkhr {
         bool benchmark(SceneGraph& scene_graph);
 
         Image get_screenshot(const SceneGraph& scene_graph);
-        Image get_screenshot(const SceneGraph& scene_graph,
-                             Raytracer& raytracer_instance);
+        Image get_screenshot(const SceneGraph& scene_graph, Raytracer& raytracer_instance);
 
     private:
         Image get_screenshot();
@@ -161,6 +160,8 @@ namespace vkhr {
         friend class vulkan::DepthMap;
 
         friend class ::vkhr::Interface;
+
+        friend class vkrhr::V_Raytracer;
     };
 }
 

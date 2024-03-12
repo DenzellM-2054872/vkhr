@@ -1,6 +1,7 @@
 #include <vkhr/rasterizer/model.hh>
 
 #include <vkhr/rasterizer.hh>
+#include <vkrhr/v_ray_tracer.hh>
 
 #include <vkhr/scene_graph/camera.hh>
 #include <vkhr/scene_graph/light_source.hh>
@@ -11,6 +12,11 @@ namespace vkhr {
     namespace vulkan {
         Model::Model(const vkhr::Model& wavefront_model,
                      vkhr::Rasterizer& vulkan_renderer) {
+            load(wavefront_model, vulkan_renderer);
+        }
+
+        Model::Model(const vkhr::Model& wavefront_model, vkrhr::V_Raytracer& vulkan_renderer)
+        {
             load(wavefront_model, vulkan_renderer);
         }
 
@@ -35,6 +41,31 @@ namespace vkhr {
             vk::DebugMarker::object_name(vulkan_renderer.device, elements, VK_OBJECT_TYPE_BUFFER, "Model Index Buffer", id);
             vk::DebugMarker::object_name(vulkan_renderer.device, elements.get_device_memory(), VK_OBJECT_TYPE_DEVICE_MEMORY,
                                          "Model Index Device Memory", id);
+
+            ++id;
+        }
+
+        void Model::load(const vkhr::Model& wavefront_model,
+            vkrhr::V_Raytracer& vulkan_renderer) {
+            vertices = vk::VertexBuffer{
+                vulkan_renderer.m_device,
+                vulkan_renderer.m_command_pool,
+                wavefront_model.get_vertices()
+            };
+
+            vk::DebugMarker::object_name(vulkan_renderer.m_device, vertices, VK_OBJECT_TYPE_BUFFER, "Model Vertex Buffer", id);
+            vk::DebugMarker::object_name(vulkan_renderer.m_device, vertices.get_device_memory(), VK_OBJECT_TYPE_DEVICE_MEMORY,
+                "Model Vertex Device Memory", id);
+
+            elements = vk::IndexBuffer{
+                vulkan_renderer.m_device,
+                vulkan_renderer.m_command_pool,
+                wavefront_model.get_elements()
+            };
+
+            vk::DebugMarker::object_name(vulkan_renderer.m_device, elements, VK_OBJECT_TYPE_BUFFER, "Model Index Buffer", id);
+            vk::DebugMarker::object_name(vulkan_renderer.m_device, elements.get_device_memory(), VK_OBJECT_TYPE_DEVICE_MEMORY,
+                "Model Index Device Memory", id);
 
             ++id;
         }

@@ -14,7 +14,13 @@
 #include <vkpp/descriptor_set.hh>
 #include <vkpp/pipeline.hh>
 
+namespace vkrhr
+{
+    class V_Raytracer;
+}
+
 namespace vk = vkpp;
+
 
 namespace vkhr {
     class Rasterizer;
@@ -24,10 +30,16 @@ namespace vkhr {
             HairStyle(const vkhr::HairStyle& hair_style,
                       vkhr::Rasterizer& vulkan_renderer);
 
+            HairStyle(const vkhr::HairStyle& hair_style,
+                vkrhr::V_Raytracer& vulkan_renderer);
+
             HairStyle() = default;
 
             void load(const vkhr::HairStyle& hair_style,
                       vkhr::Rasterizer& scene_renderer);
+
+            void load(const vkhr::HairStyle& hair_style,
+                        vkrhr::V_Raytracer& scene_renderer);
 
             void voxelize(Pipeline& voxelization_pipeline, vk::DescriptorSet& descriptor_set, vk::CommandBuffer& command_buffer);
             void draw_volume(Pipeline& volume_pipeline,    vk::DescriptorSet& descriptor_set, vk::CommandBuffer& command_buffer);

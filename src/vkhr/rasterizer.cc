@@ -10,7 +10,7 @@
 
 namespace vkhr {
     Rasterizer::Rasterizer(Window& window, const SceneGraph& scene_graph) {
-        vk::Version target_vulkan_loader { 1,1 };
+        vk::Version target_vulkan_loader { 1,3 };
         vk::Application application_information {
             "VKHR", { 1, 0, 0 },
             "None", { 0, 0, 0 },
@@ -53,7 +53,15 @@ namespace vkhr {
         physical_device.assign_present_queue_indices(window_surface);
 
         std::vector<vk::Extension> device_extensions {
-            "VK_KHR_swapchain"
+            "VK_KHR_acceleration_structure",
+            "VK_EXT_descriptor_indexing",
+            "VK_KHR_buffer_device_address",
+            "VK_KHR_deferred_host_operations",
+            "VK_KHR_ray_tracing_pipeline",
+            "VK_KHR_spirv_1_4",
+            "VK_KHR_shader_float_controls",
+            "VK_KHR_ray_query",
+            "VK_KHR_swapchain",
         };
 
         // Just enable every device feature we have right now.
@@ -158,7 +166,7 @@ namespace vkhr {
 
         build_pipelines();
     }
-
+    //this is where the type of renderer gets sent to the gpu
     void Rasterizer::update(const SceneGraph& scene_graph) {
         camera[frame].update(scene_graph.get_camera().get_transform());
         lights[frame].update(scene_graph.fetch_light_source_buffers());
@@ -168,6 +176,7 @@ namespace vkhr {
         params[frame].update(imgui.parameters); // Rendering parameter.
     }
 
+    //this draw function is used for non-raytraced frames
     void Rasterizer::draw(const SceneGraph& scene_graph) {
         command_buffer_finished[frame].wait_and_reset();
         imgui.record_performance(query_pools[frame].request_timestamp_queries());
@@ -331,7 +340,7 @@ namespace vkhr {
                 hair_styles[hair_style].draw_volume(pipeline, pipeline.descriptor_sets[frame], command_buffer);
         }
     }
-
+    //this one is used for ray-tracing
     void Rasterizer::draw(Image& fullscreen_image) {
         command_buffer_finished[frame].wait_and_reset();
         imgui.record_performance(query_pools[frame].request_timestamp_queries());
@@ -382,6 +391,7 @@ namespace vkhr {
         frame = fetch_next_frame();
     }
 
+    //this is where all the shaders are loaded
     void Rasterizer::build_pipelines() {
         vulkan::HairStyle::depth_pipeline(hair_depth_pipeline, *this);
         vulkan::Model::depth_pipeline(mesh_depth_pipeline, *this);

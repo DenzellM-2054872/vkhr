@@ -20,6 +20,12 @@
 #include <imgui_impl_vulkan.h>
 #include <imgui_impl_glfw.h>
 
+namespace vkrhr
+{
+    class V_Raytracer;
+}
+
+
 namespace vkhr {
     class Rasterizer;
     class Interface final {
@@ -27,6 +33,7 @@ namespace vkhr {
         Interface() = default;
 
         Interface(Window& w, Rasterizer* rasterizer);
+        Interface(Window& w, vkrhr::V_Raytracer* raytracer);
 
         Interface(Interface&& interface) noexcept;
         Interface& operator=(Interface&& interface) noexcept;
@@ -36,9 +43,10 @@ namespace vkhr {
 
         void make_custom_style(ImGuiStyle&);
 
-        void load(vkhr::Rasterizer& vulkan_renderer);
+        void load(Rasterizer& vulkan_renderer);
+        void load(vkrhr::V_Raytracer& raytracer);
         void transform(SceneGraph& scene_graph, Rasterizer& rasterizer, Raytracer& raytracer);
-        void draw(vkpp::CommandBuffer& command_list);
+        void draw(vk::CommandBuffer& command_list);
 
         enum SamplingMethod : int {
             Uniform = 0,
