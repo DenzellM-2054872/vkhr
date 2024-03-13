@@ -142,6 +142,7 @@ namespace vkhr {
         int get_profile_limit() const;
 
         void record_performance(const std::unordered_map<std::string, float>& timestamps);
+        Renderer::Type get_current_renderer();
 
     private:
         void traverse(SceneGraph& scene_graph, Rasterizer& rasterizer, Raytracer& ray_tracer);

@@ -1399,5 +1399,8 @@
     <None Include="..\share\shaders\volumes\voxelize.comp">
       <Filter>shaders\volumes</Filter>
     </None>
+    <None Include="..\share\shaders\strands\frostbite_strand.frag">
+      <Filter>shaders\strands</Filter>
+    </None>
   </ItemGroup>
 </Project>

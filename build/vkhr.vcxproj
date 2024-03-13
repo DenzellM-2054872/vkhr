@@ -524,6 +524,7 @@
     <None Include="..\share\shaders\self-shadowing\tex2Dproj.glsl" />
     <None Include="..\share\shaders\shading\kajiya-kay.glsl" />
     <None Include="..\share\shaders\shading\lambertian.glsl" />
+    <None Include="..\share\shaders\strands\frostbite_strand.frag" />
     <None Include="..\share\shaders\strands\strand.frag" />
     <None Include="..\share\shaders\strands\strand.geom" />
     <None Include="..\share\shaders\strands\strand.glsl" />

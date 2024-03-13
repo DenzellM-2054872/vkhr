@@ -79,6 +79,7 @@ namespace vkhr {
         renderers.push_back("Ray Tracer");
         renderers.push_back("Raymarcher");
         renderers.push_back("Hybrid LoD");
+        renderers.push_back("Frostbite");
 
         scene_files.push_back(SCENE("ponytail.vkhr"));
         scene_files.push_back(SCENE("bear.vkhr"));
@@ -599,6 +600,11 @@ namespace vkhr {
         header << export_profiles[export_profiles.size() - 1];
 
         return header.str();
+    }
+
+    Renderer::Type Interface::get_current_renderer()
+    {
+        return current_renderer;
     }
 
     std::string Interface::get_performance(const std::string& parameters) {

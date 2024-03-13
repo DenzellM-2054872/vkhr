@@ -168,6 +168,7 @@ namespace vkhr {
         params[frame].update(imgui.parameters); // Rendering parameter.
     }
 
+    //draws the non-raytraced stuff
     void Rasterizer::draw(const SceneGraph& scene_graph) {
         command_buffer_finished[frame].wait_and_reset();
         imgui.record_performance(query_pools[frame].request_timestamp_queries());
@@ -181,22 +182,29 @@ namespace vkhr {
         }
 
         command_buffers[frame].begin();
-
         command_buffers[frame].reset_query_pool(query_pools[frame], 0, // performance.
                                                 query_pools[frame].get_query_count());
+        if (imgui.get_current_renderer() != Renderer::Frostbite) {
+            vk::DebugMarker::begin(command_buffers[frame], "Total Frame Time", query_pools[frame]);
 
-        vk::DebugMarker::begin(command_buffers[frame], "Total Frame Time", query_pools[frame]);
+            draw_depth(scene_graph, command_buffers[frame]);
+            voxelize(scene_graph, command_buffers[frame]);
+            draw_color(scene_graph, command_buffers[frame]);
 
-        draw_depth(scene_graph, command_buffers[frame]);
+            vk::DebugMarker::close(command_buffers[frame], "Total Frame Time", query_pools[frame]);
+        }
+        else {
+            vk::DebugMarker::begin(command_buffers[frame], "Total Frame Time", query_pools[frame]);
 
-        voxelize(scene_graph, command_buffers[frame]);
+            //draw_depth(scene_graph, command_buffers[frame]);
+            //voxelize(scene_graph, command_buffers[frame]);
+            draw_color_frostbite(scene_graph, command_buffers[frame]);
 
-        draw_color(scene_graph, command_buffers[frame]);
+            vk::DebugMarker::close(command_buffers[frame], "Total Frame Time", query_pools[frame]);
+        }
 
-        vk::DebugMarker::close(command_buffers[frame], "Total Frame Time", query_pools[frame]);
 
         command_buffers[frame].end();
-
         device.get_graphics_queue().submit(command_buffers[frame], image_available[frame],
                                            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                                            render_complete[frame], command_buffer_finished[frame]);
@@ -227,6 +235,44 @@ namespace vkhr {
         }
 
         vk::DebugMarker::close(command_buffers[frame], "Voxelize Strands", query_pools[frame]);
+    }
+    void Rasterizer::draw_color_frostbite(const SceneGraph& scene_graph, vk::CommandBuffer& command_buffer) {
+        vk::DebugMarker::begin(command_buffers[frame], "Color Pass");
+
+
+        command_buffers[frame].begin_render_pass(color_pass, framebuffers[frame],
+            { 1.00f, 1.00f, 1.00f, 1.00f });
+
+        vk::DebugMarker::begin(command_buffers[frame], "Draw Mesh Models", query_pools[frame]);
+        draw_model(scene_graph, model_mesh_pipeline, command_buffers[frame]);
+        vk::DebugMarker::close(command_buffers[frame], "Draw Mesh Models", query_pools[frame]);
+
+
+        vk::DebugMarker::begin(command_buffers[frame], "Draw Hair Styles", query_pools[frame]);
+        draw_hairs_frostbite(scene_graph, frostbite_hair_style_pipeline, command_buffers[frame]);
+        vk::DebugMarker::close(command_buffers[frame], "Draw Hair Styles", query_pools[frame]);
+
+        vk::DebugMarker::close(command_buffers[frame]);
+
+        vk::DebugMarker::begin(command_buffers[frame], "ImGui Pass");
+        command_buffers[frame].begin_render_pass(imgui_pass, framebuffers[frame],
+            { 1.00f, 1.00f, 1.00f, 1.00f });
+        vk::DebugMarker::begin(command_buffers[frame], "Draw GUI Overlay", query_pools[frame]);
+        imgui.draw(command_buffers[frame]);
+        vk::DebugMarker::close(command_buffers[frame], "Draw GUI Overlay", query_pools[frame]);
+        command_buffers[frame].next_subpass(); // Empty subpass just to make them compatible...
+        command_buffers[frame].end_render_pass();
+
+        vk::DebugMarker::close(command_buffers[frame]);
+    }
+
+    void Rasterizer::draw_hairs_frostbite(const SceneGraph& scene_graph, Pipeline& pipeline, vk::CommandBuffer& command_buffer, glm::mat4 projection) {
+        command_buffer.bind_pipeline(pipeline); // Color / Depth / Voxels.
+        for (auto& hair_node : scene_graph.get_nodes_with_hair_styles()) {
+            command_buffer.push_constant(pipeline, 0, projection * hair_node->get_model_matrix());
+            for (auto& hair_style : hair_node->get_hair_styles())
+                hair_styles[hair_style].draw(pipeline, pipeline.descriptor_sets[frame], command_buffer);
+        }
     }
 
     void Rasterizer::draw_color(const SceneGraph& scene_graph, vk::CommandBuffer& command_buffer) {
@@ -389,6 +435,7 @@ namespace vkhr {
         vulkan::Volume::build_pipeline(strand_dvr_pipeline, *this);
         vulkan::LinkedList::build_pipeline(ppll_blend_pipeline, *this);
         vulkan::HairStyle::build_pipeline(hair_style_pipeline, *this);
+        vulkan::HairStyle::build_frostbite_pipeline(frostbite_hair_style_pipeline, *this);
         vulkan::Model::build_pipeline(model_mesh_pipeline, *this);
         vulkan::Billboard::build_pipeline(billboards_pipeline, *this);
     }

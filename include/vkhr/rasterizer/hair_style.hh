@@ -35,7 +35,7 @@ namespace vkhr {
             void draw(Pipeline& vulkan_strand_rasterizer_pipeline,
                       vk::DescriptorSet& descriptor_set,
                       vk::CommandBuffer& command_buffer) override;
-
+            static void build_frostbite_pipeline(Pipeline& pipeline, Rasterizer& vulkan_renderer);
             static void build_pipeline(Pipeline& pipeline_reference, Rasterizer& vulkan_renderer);
             static void depth_pipeline(Pipeline& pipeline_reference, Rasterizer& vulkan_renderer);
             static void voxel_pipeline(Pipeline& pipeline_reference, Rasterizer& vulkan_renderer);
