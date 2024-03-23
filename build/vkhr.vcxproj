@@ -522,8 +522,10 @@
     <None Include="..\share\shaders\self-shadowing\filter_shadows.glsl" />
     <None Include="..\share\shaders\self-shadowing\linearize_depth.glsl" />
     <None Include="..\share\shaders\self-shadowing\tex2Dproj.glsl" />
+    <None Include="..\share\shaders\shading\kajiya-kay-diffuse.glsl" />
     <None Include="..\share\shaders\shading\kajiya-kay.glsl" />
     <None Include="..\share\shaders\shading\lambertian.glsl" />
+    <None Include="..\share\shaders\shading\marschener.glsl" />
     <None Include="..\share\shaders\strands\frostbite_strand.frag" />
     <None Include="..\share\shaders\strands\strand.frag" />
     <None Include="..\share\shaders\strands\strand.geom" />
@@ -531,6 +533,8 @@
     <None Include="..\share\shaders\strands\strand.vert" />
     <None Include="..\share\shaders\transparency\ppll.glsl" />
     <None Include="..\share\shaders\transparency\resolve.comp" />
+    <None Include="..\share\shaders\utils\cubic_solver.glsl" />
+    <None Include="..\share\shaders\utils\fresnel.glsl" />
     <None Include="..\share\shaders\utils\math.glsl" />
     <None Include="..\share\shaders\utils\rand.glsl" />
     <None Include="..\share\shaders\volumes\bounding_box.glsl" />

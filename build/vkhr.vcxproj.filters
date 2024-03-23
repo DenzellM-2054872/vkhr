@@ -1402,5 +1402,17 @@
     <None Include="..\share\shaders\strands\frostbite_strand.frag">
       <Filter>shaders\strands</Filter>
     </None>
+    <None Include="..\share\shaders\utils\cubic_solver.glsl">
+      <Filter>shaders\utils</Filter>
+    </None>
+    <None Include="..\share\shaders\utils\fresnel.glsl">
+      <Filter>shaders\utils</Filter>
+    </None>
+    <None Include="..\share\shaders\shading\marschener.glsl">
+      <Filter>shaders\shading</Filter>
+    </None>
+    <None Include="..\share\shaders\shading\kajiya-kay-diffuse.glsl">
+      <Filter>shaders\shading</Filter>
+    </None>
   </ItemGroup>
 </Project>
