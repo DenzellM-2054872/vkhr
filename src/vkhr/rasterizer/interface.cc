@@ -225,11 +225,18 @@ namespace vkhr {
                 ImGui::DragFloat("longitudinal width", &parameters.longitudinal_width, 0.1);
                 ImGui::DragFloat("longitudinal shift", &parameters.longitudinal_shift, 0.1);
                 ImGui::DragFloat("index of refraction", &parameters.refraction_index, 0.01);
+
                 ImGui::DragFloat("Absorption R", &parameters.abs_coef_R, 0.01, 0.0);
                 ImGui::SameLine(0.0, 8.0);
                 ImGui::DragFloat("Absorption G", &parameters.abs_coef_G, 0.01, 0.0);
                 ImGui::SameLine(0.0, 8.0);
                 ImGui::DragFloat("Absorption B", &parameters.abs_coef_B, 0.01, 0.0);
+
+                ImGui::DragFloat("caustic intensity limit", &parameters.caustic_intensity_limit, 0.01);
+                ImGui::DragFloat("azimuthal width of caustic", &parameters.caustic_width, 0.01);
+                ImGui::DragFloat("glint scale factor", &parameters.glint_scale_fac, 0.01);
+                ImGui::DragFloat("fade range for caustic merge", &parameters.caustic_merge_range, 0.01);
+
                 ImGui::PopItemWidth();
             }
 

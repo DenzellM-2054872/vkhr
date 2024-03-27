@@ -18,13 +18,11 @@ vec4 LinearSolver(float a, float b)
 
 vec4 QuadraticSolver(float a, float b, float c)
 {
-    vec4 roots;
+    vec4 roots = vec4(0);
     if (abs(a) < M_EPS)
         return LinearSolver(b, c);
     else
     {
-        roots = vec4(0);
-
         float D = b * b - 4 * a * c;
 
         if (abs(D) < M_EPS)

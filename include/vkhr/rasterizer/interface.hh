@@ -86,9 +86,15 @@ namespace vkhr {
             float longitudinal_width = 8.0f;            // BetaR which sould be between 5 & 10 degrees
             float longitudinal_shift = 3.0f;            // AlpaR which sould be between -10 & -5 degrees
             float refraction_index = 1.55;              // Nu should be around 1.55
-            float abs_coef_R = 0.432; 
-            float abs_coef_G = 0.612; 
-            float abs_coef_B = 0.98 ; 
+
+            float abs_coef_R = 0.44; 
+            float abs_coef_G = 0.64; 
+            float abs_coef_B = 0.90;
+
+            float caustic_intensity_limit = 0.5;  // 0.5
+            float caustic_width = 1.5;            // 10 to 25 degrees
+            float glint_scale_fac = 0.4;          // 0.5 to 5
+            float caustic_merge_range = 0.3;      // 0.2 to 0.4
 
         } parameters {
             KajiyaKay,
