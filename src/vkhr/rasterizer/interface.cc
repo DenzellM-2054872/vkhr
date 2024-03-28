@@ -237,6 +237,15 @@ namespace vkhr {
                 ImGui::DragFloat("glint scale factor", &parameters.glint_scale_fac, 0.01);
                 ImGui::DragFloat("fade range for caustic merge", &parameters.caustic_merge_range, 0.01);
 
+                //ImGui::DragInt("karis mode", &parameters.karis_mode, 1, 0, 1);
+                if (ImGui::CollapsingHeader("single scattering settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+                    if (ImGui::Checkbox("karis mode", &(karis_on))) parameters.karis_mode *= -1;
+                    //if (ImGui::Button("toggle karis")) parameters.karis_mode *= -1;
+                    if (ImGui::Checkbox("render r", &(render_r))) parameters.enable_r *= -1;
+                    if (ImGui::Checkbox("render tt", &(render_tt))) parameters.enable_tt *= -1;
+                    if (ImGui::Checkbox("render trt", &(render_trt))) parameters.enable_trt *= -1;
+                }
+
                 ImGui::PopItemWidth();
             }
 

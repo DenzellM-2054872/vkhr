@@ -56,6 +56,10 @@ namespace vkhr {
             ConventionalShadowMaps = 0,
             ApproximateDeepShadows = 1
         };
+        bool karis_on = false;
+        bool render_r = true;
+        bool render_tt = true;
+        bool render_trt = true;
 
         struct Parameters {
             int shading_model;
@@ -95,6 +99,11 @@ namespace vkhr {
             float caustic_width = 1.5;            // 10 to 25 degrees
             float glint_scale_fac = 0.4;          // 0.5 to 5
             float caustic_merge_range = 0.3;      // 0.2 to 0.4
+
+            int karis_mode = -1;
+            int enable_r = 1;
+            int enable_tt = 1;
+            int enable_trt = 1;
 
         } parameters {
             KajiyaKay,

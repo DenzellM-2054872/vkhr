@@ -99,11 +99,8 @@ float angle_polynomial(int p, float eta_perpendic, float h)
     return ((6 * p * c / M_PI) - 2) * gamma_i - 8 * (p * c / (M_PI * M_PI * M_PI)) * gamma_i * gamma_i * gamma_i + p * M_PI;
 }
 
-vec3 NP(int p, float phi, float theta_d, float eta, vec3 absorb)
+vec3 NP(int p, float phi, float theta_d, float eta_perpendic, float eta_parallel, vec3 absorb)
 {
-    float eta_perpendic = B_index(theta_d, eta);
-    float eta_parallel = (eta * eta) / eta_perpendic;
-
     vec4 roots = calc_roots(p , eta_perpendic, phi);
     vec3 res = vec3(0);
 
@@ -121,25 +118,26 @@ vec3 NP(int p, float phi, float theta_d, float eta, vec3 absorb)
     return final_res;
 }
 
-vec3 NP_R(float phi, float theta_d, float eta, float view_light_angle)
+vec3 NP_R(float phi, float theta_d, float eta_perpendic, float eta_parallel)
 {
-    float eta_perpendic = B_index(theta_d, eta);
-    float eta_parallel = (eta * eta) / eta_perpendic;
-
     float gamma_i = -phi / 2;
     float h = sin(gamma_i);
 
     //this one is from the implementation i found
-    //vec3 res = vec3(sqrt(1 - h * h));
-    //res *= vec3(fresnel(eta_perpendic, eta_parallel, gamma_i));
+    vec3 res = vec3(sqrt(1 - h * h));
+    res *= vec3(fresnel(eta_perpendic, eta_parallel, gamma_i));
 
+
+    return vec3(min(1, res.r),min(1, res.g), min(1, res.b));
+}
+
+    vec3 NP_R_K(float phi, float theta_d, float eta_perpendic, float eta_parallel, float view_light_angle)
+{
     //this is how it is described in the frostbite paper
     //at certain angles this stops working mb figure out why later
     // why does this work with -abs but not normal abs
     vec3 res = vec3(0.25 * cos(phi / 2));
     res *= vec3(fresnel(eta_perpendic, eta_parallel, sqrt(-abs(0.5 * (radians(1) + view_light_angle)))));
-    //res *= vec3(fresnel(eta_perpendic, eta_parallel, sqrt(0.5 * (radians(1) + view_light_angle))));
-
 
     return vec3(min(1, res.r),min(1, res.g), min(1, res.b));
 }
@@ -152,20 +150,14 @@ float calc_h(float phi, float inv_eta_tick)
     return abs(top / bottom);
 }
 
-vec3 NP_TT(float phi, float theta_d, float eta, vec3 absorb)
+vec3 NP_TT_K(float phi, float theta_d, float eta_perpendic, float eta_parallel, vec3 absorb)
 {
-    float eta_perpendic = B_index(theta_d, eta);
-    float eta_parallel = (eta * eta) / eta_perpendic;
-
     float a = 1/eta_perpendic;
     float h = calc_h(phi, a);
     //float h = (1 + a * (0.6 - 0.8 * cos(phi))) * cos(phi / 2)
 
     vec3 finalAbsorption = attenuation(absorb, 1, h, eta_perpendic, eta_parallel, theta_d);
     
-    //float inverseDerivateAngle = inv_first_der(1, eta_perpendic, h);
-    //vec3 res = finalAbsorption * 2 * abs(inverseDerivateAngle); //0.5 here
-
     //from the karis paper (quite difrent then the original)
     float distrib = exp(-3.65 * cos(phi) - 3.98);
     vec3 res = finalAbsorption * distrib;
@@ -174,11 +166,8 @@ vec3 NP_TT(float phi, float theta_d, float eta, vec3 absorb)
     return final_res;
 }
 
-vec3 NP_TRT(float phi, float theta_d, float eta, vec3 absorb)
+vec3 NP_TRT(float phi, float theta_d, float eta_perpendic, float eta_parallel, vec3 absorb)
 {
-    float eta_perpendic = B_index(theta_d, eta);
-    float eta_parallel = (eta * eta) / eta_perpendic;
-
     float delta_hM = caustic_intensity_limit;
     float w_c = caustic_width * M_PI / 180;
     float k_G = glint_scale_fac;
@@ -206,7 +195,7 @@ vec3 NP_TRT(float phi, float theta_d, float eta, vec3 absorb)
     }
 
     phi_c = angle_polynomial(2, eta_perpendic, h_c);
-    vec3 res = NP(2, phi, theta_d, eta, absorb);
+    vec3 res = NP(2, phi, theta_d, eta_perpendic, eta_parallel, absorb);
     vec3 final_abs = attenuation(absorb, 2, h_c, eta_perpendic, eta_parallel, theta_d);
 
     res = res * (1 - t * normal_pdf(phi, phi_c, w_c) / normal_pdf(0, 0, w_c));
@@ -229,8 +218,8 @@ vec3 marschener(vec3 tangent, vec3 viewDirection, vec3 lightDirection, vec3 ligh
     //the projection of the light/view direction onto the normal of the normal plane (the tangent)
     float dotLightTangent = dot(lightDirection, tangent);
     float dotViewTangent = dot(viewDirection, tangent);
-    vec3 LT_P = normalize(lightDirection - dotLightTangent);
-    vec3 VT_P = normalize(viewDirection - dotViewTangent);
+    vec3 LT_P = normalize(lightDirection - tangent * dotLightTangent);
+    vec3 VT_P = normalize(viewDirection - tangent * dotViewTangent);
 
     vec3 Normal = normalize(LT_P + VT_P);
     vec3 Binormal = normalize(cross(Normal, tangent));
@@ -246,18 +235,37 @@ vec3 marschener(vec3 tangent, vec3 viewDirection, vec3 lightDirection, vec3 ligh
     float phi = phi_r - phi_i; //the relative azimuth
     //the karis presentation implies this to be the case
     //float phi = dot(viewDirection, lightDirection); //the relative azimuth
-     
+
+    float eta_perpendic = B_index(theta_d, refraction_index);
+    float eta_parallel = (refraction_index * refraction_index) / eta_perpendic;
 
     float M_R   = normal_pdf(theta_h, long_shift_R, long_width_R);
     float M_TT  = normal_pdf(theta_h, -long_shift_TT, long_width_TT);
     float M_TRT = normal_pdf(theta_h, -long_shift_TRT, long_width_TRT);
-    
-    // vec3 N_R = NP(0, phi, theta_d, refraction_index, abs_coef);
-    vec3 N_R   = NP_R(phi, theta_d, refraction_index, dot(viewDirection, lightDirection));
-    //vec3 N_TT  = NP(1, phi, theta_d, refraction_index, abs_coef);
-    vec3 N_TT  = NP_TT(phi, theta_d, refraction_index, abs_coef);
-    //vec3 N_TRT = NP(2, phi, theta_d, refraction_index, abs_coef);
-    vec3 N_TRT = NP_TRT(phi, theta_d, refraction_index, abs_coef);
+    vec3 N_R = vec3(0), N_TT = vec3(0), N_TRT = vec3(0);
+    if(karis_mode == 1)
+    {
+        if(enable_r == 1)  N_R   = NP_R_K(phi, theta_d, eta_perpendic, eta_parallel, dot(viewDirection, lightDirection));
+        if(enable_tt == 1) N_TT  = NP_TT_K(phi, theta_d, eta_perpendic, eta_parallel, abs_coef);
+        if(enable_trt == 1)N_TRT = NP_TRT(phi, theta_d, eta_perpendic, eta_parallel, abs_coef);
+
+    }
+    else
+    {
+        if(enable_r == 1){
+            // N_R = NP(0, phi, theta_d, refraction_index, abs_coef);
+            N_R   = NP_R(phi, theta_d, eta_perpendic, eta_parallel);
+        }
+
+
+        if(enable_tt == 1) N_TT  = NP(1, phi, theta_d, eta_perpendic, eta_parallel, abs_coef);
+
+        if(enable_trt == 1){
+            //vec3 N_TRT = NP(2, phi, theta_d, refraction_index, abs_coef);
+            N_TRT = NP_TRT(phi, theta_d, eta_perpendic, eta_parallel, abs_coef);
+        }
+    }
+
 
     float cos_squared_theta_d = pow(cos(theta_d), 2);
 

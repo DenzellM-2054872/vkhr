@@ -44,6 +44,11 @@ layout(binding = 4) uniform Params {
     float caustic_width;            // 10 to 25 degrees
     float glint_scale_fac;          // 0.5 to 5
     float caustic_merge_range;      // 0.2 to 0.4
+
+    int karis_mode;
+    int enable_r;
+    int enable_tt;
+    int enable_trt;
 };
 
 #endif
