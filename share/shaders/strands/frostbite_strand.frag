@@ -12,6 +12,8 @@
 #include "../shading/kajiya-kay-diffuse.glsl"
 #include "../shading/marschener.glsl"
 
+#include "../anti-aliasing/gpaa.glsl"
+#include "../level_of_detail/scheme.glsl"
 
 layout(location = 0) in PipelineIn {
     vec4 position;
@@ -22,6 +24,17 @@ layout(location = 0) in PipelineIn {
 layout(location = 0) out vec4 color;
 
 void main() {
+
+    float coverage = gpaa(gl_FragCoord.xy, fs_in.position,
+                          camera.projection * camera.view,
+                          camera.resolution, strand_width);
+
+    coverage *= hair_alpha; // Alpha used for transparency.
+    if (coverage < 0.001) discard; // Shading not worth it!
+
+    coverage *= 1 - lod(magnified_distance, minified_distance, camera.look_at_distance);
+    coverage *= fs_in.thickness * STRAND_SCALING; // Slowly fades the strand at the tip.
+
     vec3 tangent = normalize(fs_in.tangent);
     vec3 viewDirection = normalize(fs_in.position.xyz - camera.position);
     vec3 lightDirection = normalize(lights[0].origin - fs_in.position.xyz);
@@ -30,8 +43,8 @@ void main() {
 
     vec3 abs_coef = vec3(abs_coef_R, abs_coef_G, abs_coef_B);
     vec3 light_bulb_color = lights[0].intensity;
-    vec3 specular_colors = marschener(tangent, viewDirection, lightDirection, light_bulb_color, abs_coef);
+    vec3 specular_colors = marschener(tangent, viewDirection, lightDirection, light_bulb_color, abs_coef, hair_color);
 
-    color = vec4(specular_colors + diffuse_colors, 1.0f);
+    color = vec4(specular_colors + diffuse_colors, coverage);
 }
 
