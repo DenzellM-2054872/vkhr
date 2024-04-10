@@ -44,13 +44,13 @@ float F_0(float eta_parallel, float eta_perpendic, float theta)
     return 0.5f * (fresnelPer(eta_perpendic, theta) + 
 				   fresnelPar(eta_parallel, theta));
 }
-/*
-float fresnel(float eta_parallel, float eta_perpendic, float theta)
+
+float fresnel2(float eta, float x)
 {
-    float f_0 = F_0(eta_parallel, eta_perpendic, theta);
-    return f_0 + (1 - f_0) * pow(1 - cos(theta), 5);
+    float f_0 = pow(1 - eta, 2) / pow(1 + eta, 2);
+    return f_0 + (1 - f_0) * pow(1 - x, 5);
 }
-*/
+
 
 float fresnel(float eta_parallel, float eta_perpendic, float theta)
 {
@@ -63,6 +63,6 @@ float fresnel(float eta_parallel, float eta_perpendic, float theta)
     float fresnel_90 = fresnelPer(eta_perpendic, theta);
 
     return fresnel_0 + (fresnel_90 - fresnel_0) * (flipped_squared * flipped * flipped_squared);
-    }
+}
 
 #endif

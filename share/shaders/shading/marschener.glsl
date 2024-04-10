@@ -18,12 +18,6 @@ vec3 T(vec3 absorb, float gamma_t)
     return exp(-2 * absorb * l);
 }
 
-float fresnel2(float eta, float x)
-{
-    float F_0 = pow(1 - eta, 2) / pow(1 + eta, 2);
-    return F_0 + (1 - F_0) * pow(1 - x, 5);
-}
-
 
 vec3 attenuation(vec3 absorb, int p, float h, float eta_parallel, float eta_perpendic, float theta_d)
 {
@@ -131,7 +125,7 @@ vec3 NP_R(float phi, float theta_d, float eta_perpendic, float eta_parallel)
     return vec3(min(1, res.r),min(1, res.g), min(1, res.b));
 }
 
-    vec3 NP_R_K(float phi, float theta_d, float eta_perpendic, float eta_parallel, float view_light_angle)
+vec3 NP_R_K(float phi, float theta_d, float eta_perpendic, float eta_parallel, float view_light_angle)
 {
     //this is how it is described in the frostbite paper
     //at certain angles this stops working mb figure out why later
@@ -142,27 +136,27 @@ vec3 NP_R(float phi, float theta_d, float eta_perpendic, float eta_parallel)
     return vec3(min(1, res.r),min(1, res.g), min(1, res.b));
 }
 
-float calc_h(float phi, float inv_eta_tick)
-{
+float calc_h_tt(float phi, float a){
     float top = sign(phi) * cos(phi / 2);
-    float bottom = sqrt(1 + pow(inv_eta_tick, 2) - 2 * inv_eta_tick * sign(phi) * sin(phi / 2));
-    
-    return abs(top / bottom);
+    float bottom = sqrt(1 + a * a - 2 * a * sign(phi) * sin(phi / 2));
+    return abs(top/bottom);
 }
 
+float calc_h_2_tt(float phi, float a){
+    float top = 0.5 + 0.5 * cos(phi);
+    float bottom = 1 + a * a - 2 * a * sqrt(0.5 - 0.5 * cos(phi));
+    return top/bottom;
+}
 vec3 NP_TT_K(float phi, float theta_d, float eta_perpendic, float eta_parallel, vec3 hair_color)
 {
     float a = 1/eta_perpendic;
-    float h = calc_h(phi, a);
-    //float h = (1 + a * (0.6 - 0.8 * cos(phi))) * cos(phi / 2)
+    float h2 = calc_h_2_tt(phi, a);
 
-    float exponent = sqrt(1 - (h * h) * (a * a)) / (2 * cos(theta_d));
+    float exponent = sqrt(1 - h2 * (a * a)) / (2 * cos(theta_d));
     vec3 t = vec3(pow(hair_color.r, exponent), pow(hair_color.g, exponent), pow(hair_color.b, exponent));
 
-    float gamma_i = asin(h);
-    float gamma_t = asin(h / eta_perpendic);
-    float fres = fresnel(eta_parallel, eta_perpendic, gamma_i);
-    float inv_fres = fresnel(1 / eta_parallel, 1 / eta_perpendic, gamma_t);
+    float fres_angle = cos(theta_d) * sqrt(1 - h2);
+    float fres = fresnel(eta_parallel, eta_perpendic, fres_angle);
 
     //given that p = 1: p-1 = 0 -> pow(x, 0) = 1 and thus can be ignored
     vec3 att = (1 - fres) * (1 - fres) * t;
@@ -220,20 +214,18 @@ vec3 NP_TRT_K(float phi, float theta_d, float eta_perpendic, float eta_parallel,
     float scale = 1.5 * (1 - beta_n);
     float distrib = scale * exp(scale * (17 * cos(phi) - 16.78));
 
-    float a = 1/eta_perpendic;
     float h = sqrt(3) / 2;
-    //float h = (1 + a * (0.6 - 0.8 * cos(phi))) * cos(phi / 2)
-    //if(cos(theta_d) == 0) return vec3(0);
+
     float exponent = 0.8 / cos(theta_d);
     vec3 t = vec3(pow(hair_color.r, exponent), pow(hair_color.g, exponent), pow(hair_color.b, exponent));
 
     vec3 t_pow = vec3(pow(t.r, 2), pow(t.g, 2), pow(t.b, 2));
-    float gamma_i = asin(h);
-    float gamma_t = asin(h / eta_perpendic);
-    float fres = fresnel(eta_parallel, eta_perpendic, gamma_i);
-    float inv_fres = fresnel(1 / eta_parallel, 1 / eta_perpendic, gamma_t);
 
-    vec3 att = (1 - fres) * (1 - fres) * inv_fres * t_pow;
+    float fres_angle = cos(theta_d) * sqrt(1 - pow(h, 2));
+    float fres = fresnel2(eta_perpendic, fres_angle);
+
+    //given that p = 2: p-1 = 1 -> pow(x, 1) = x and thus can be ignored
+    vec3 att = (1 - fres) * (1 - fres) * fres * t_pow;
 
     vec3 res = att * distrib;
     return vec3(min(1, res.r),min(1, res.g), min(1, res.b));
