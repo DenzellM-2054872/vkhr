@@ -118,6 +118,14 @@ namespace vkhr {
                                                            swap_chain.get_height()
         };
 
+        //ppll_frostbite = vulkan::LinkedList{
+        //*this,
+        //swap_chain.get_width(), swap_chain.get_height(),
+        //24, // { position[X, Y, Z, 1], tangent[X, Y, Z, 1], [R, G, B, A], hair thickness, Fragment Depth, Index To Previous Fragment }.
+        //vulkan::LinkedList::AverageFragmentsPerPixel * swap_chain.get_width() *
+        //                                               swap_chain.get_height()
+        //};
+
         fullscreen_billboard = vulkan::Billboard {
             swap_chain.get_width(),
             swap_chain.get_height(),
@@ -196,8 +204,8 @@ namespace vkhr {
         else {
             vk::DebugMarker::begin(command_buffers[frame], "Total Frame Time", query_pools[frame]);
 
-            //draw_depth(scene_graph, command_buffers[frame]);
-            //voxelize(scene_graph, command_buffers[frame]);
+            //draw_deep_opacity_maps(scene_graph, command_buffers[frame]);
+            //voxelize_frostbite(scene_graph, command_buffers[frame]);
             draw_color_frostbite(scene_graph, command_buffers[frame]);
 
             vk::DebugMarker::close(command_buffers[frame], "Total Frame Time", query_pools[frame]);
@@ -221,6 +229,22 @@ namespace vkhr {
         return (frame + 1) % swap_chain.size();
     }
 
+    //void Rasterizer::voxelize_frostbite(const SceneGraph& scene_graph, vk::CommandBuffer& command_buffer) {
+    //    vk::DebugMarker::begin(command_buffers[frame], "Voxelize frostbite Strands", query_pools[frame]);
+
+    //    command_buffer.bind_pipeline(hair_voxel_frostbite_pipeline);
+
+    //    for (auto& hair_node : scene_graph.get_nodes_with_hair_styles()) {
+    //        for (auto& hair : hair_node->get_hair_styles()) {
+    //            hair_styles[hair].voxelize_frostbite(hair_voxel_frostbite_pipeline,
+    //                hair_voxel_frostbite_pipeline.descriptor_sets[frame],
+    //                command_buffer);
+    //        }
+    //    }
+
+    //    vk::DebugMarker::close(command_buffers[frame], "Voxelize frostbite Strands", query_pools[frame]);
+    //}
+
     void Rasterizer::voxelize(const SceneGraph& scene_graph, vk::CommandBuffer& command_buffer) {
         vk::DebugMarker::begin(command_buffers[frame], "Voxelize Strands", query_pools[frame]);
 
@@ -236,30 +260,51 @@ namespace vkhr {
 
         vk::DebugMarker::close(command_buffers[frame], "Voxelize Strands", query_pools[frame]);
     }
-    void Rasterizer::draw_color_frostbite(const SceneGraph& scene_graph, vk::CommandBuffer& command_buffer) {
-        vk::DebugMarker::begin(command_buffers[frame], "Color Pass");
 
+    void Rasterizer::draw_color_frostbite(const SceneGraph& scene_graph, vk::CommandBuffer& command_buffer) {
+        vk::DebugMarker::begin(command_buffers[frame], "Color Pass frost");
+
+        vk::DebugMarker::begin(command_buffers[frame], "Clear PPLL Nodes frost", query_pools[frame]);
+        ppll.clear(command_buffers[frame]);
+        vk::DebugMarker::close(command_buffers[frame], "Clear PPLL Nodes frost", query_pools[frame]);
 
         command_buffers[frame].begin_render_pass(color_pass, framebuffers[frame],
             { 1.00f, 1.00f, 1.00f, 1.00f });
 
-        vk::DebugMarker::begin(command_buffers[frame], "Draw Mesh Models", query_pools[frame]);
+        vk::DebugMarker::begin(command_buffers[frame], "Draw Mesh Models frost", query_pools[frame]);
         draw_model(scene_graph, model_mesh_pipeline, command_buffers[frame]);
-        vk::DebugMarker::close(command_buffers[frame], "Draw Mesh Models", query_pools[frame]);
+        vk::DebugMarker::close(command_buffers[frame], "Draw Mesh Models frost", query_pools[frame]);
 
 
-        vk::DebugMarker::begin(command_buffers[frame], "Draw Hair Styles", query_pools[frame]);
+        vk::DebugMarker::begin(command_buffers[frame], "Draw Hair Styles frost", query_pools[frame]);
         draw_hairs_frostbite(scene_graph, frostbite_hair_style_pipeline, command_buffers[frame]);
-        vk::DebugMarker::close(command_buffers[frame], "Draw Hair Styles", query_pools[frame]);
+        vk::DebugMarker::close(command_buffers[frame], "Draw Hair Styles frost", query_pools[frame]);
+
+        command_buffers[frame].end_render_pass();
+
+       // vk::DebugMarker::begin(command_buffers[frame], "Sort the PPLL frost", query_pools[frame]);
+
+       //ppll.sort(frame,
+       //      ppll_sort_pipeline,
+       //     command_buffers[frame]);
+       // vk::DebugMarker::close(command_buffers[frame], "Sort the PPLL frost", query_pools[frame]);
+
+        vk::DebugMarker::begin(command_buffers[frame], "Resolve the PPLL frost", query_pools[frame]);
+        ppll.resolve(swap_chain,
+            frame,
+            ppll_blend_pipeline,
+            command_buffers[frame]);
+
+        vk::DebugMarker::close(command_buffers[frame], "Resolve the PPLL frost", query_pools[frame]);
 
         vk::DebugMarker::close(command_buffers[frame]);
 
-        vk::DebugMarker::begin(command_buffers[frame], "ImGui Pass");
+        vk::DebugMarker::begin(command_buffers[frame], "ImGui Pass frost");
         command_buffers[frame].begin_render_pass(imgui_pass, framebuffers[frame],
             { 1.00f, 1.00f, 1.00f, 1.00f });
-        vk::DebugMarker::begin(command_buffers[frame], "Draw GUI Overlay", query_pools[frame]);
+        vk::DebugMarker::begin(command_buffers[frame], "Draw GUI Overlay frost", query_pools[frame]);
         imgui.draw(command_buffers[frame]);
-        vk::DebugMarker::close(command_buffers[frame], "Draw GUI Overlay", query_pools[frame]);
+        vk::DebugMarker::close(command_buffers[frame], "Draw GUI Overlay frost", query_pools[frame]);
         command_buffers[frame].next_subpass(); // Empty subpass just to make them compatible...
         command_buffers[frame].end_render_pass();
 
@@ -276,7 +321,7 @@ namespace vkhr {
     }
 
     void Rasterizer::draw_color(const SceneGraph& scene_graph, vk::CommandBuffer& command_buffer) {
-        vk::DebugMarker::begin(command_buffers[frame], "Color Pass");
+        vk::DebugMarker::begin(command_buffers[frame], "Color Pass t");
 
         vk::DebugMarker::begin(command_buffers[frame], "Clear PPLL Nodes", query_pools[frame]);
         ppll.clear(command_buffers[frame]);
@@ -335,6 +380,22 @@ namespace vkhr {
                 models[model_mesh].draw(pipeline, pipeline.descriptor_sets[frame], command_buffer);
         }
     }
+
+    //void Rasterizer::draw_deep_opacity_maps(const SceneGraph& scene_graph, vk::CommandBuffer& command_buffer) {
+    //    vk::DebugMarker::begin(command_buffers[frame], "Generate Deep opacity maps", query_pools[frame]);
+
+    //    command_buffer.bind_pipeline(hair_voxel_pipeline);
+
+    //    for (auto& hair_node : scene_graph.get_nodes_with_hair_styles()) {
+    //        for (auto& hair : hair_node->get_hair_styles()) {
+    //            hair_styles[hair].voxelize(hair_voxel_pipeline,
+    //                hair_voxel_pipeline.descriptor_sets[frame],
+    //                command_buffer);
+    //        }
+    //    }
+
+    //    vk::DebugMarker::close(command_buffers[frame], "Generate Deep opacity maps", query_pools[frame]);
+    //}
 
     void Rasterizer::draw_depth(const SceneGraph& scene_graph, vk::CommandBuffer& command_buffer) {
         if (!imgui.rasterizer_enabled(level_of_detail) &&
@@ -434,10 +495,15 @@ namespace vkhr {
         vulkan::HairStyle::voxel_pipeline(hair_voxel_pipeline, *this);
         vulkan::Volume::build_pipeline(strand_dvr_pipeline, *this);
         vulkan::LinkedList::build_pipeline(ppll_blend_pipeline, *this);
+        vulkan::LinkedList::build_sort_pipeline(ppll_sort_pipeline, *this);
         vulkan::HairStyle::build_pipeline(hair_style_pipeline, *this);
-        vulkan::HairStyle::build_frostbite_pipeline(frostbite_hair_style_pipeline, *this);
         vulkan::Model::build_pipeline(model_mesh_pipeline, *this);
         vulkan::Billboard::build_pipeline(billboards_pipeline, *this);
+        
+        vulkan::HairStyle::build_frostbite_pipeline(frostbite_hair_style_pipeline, *this);
+        vulkan::HairStyle::voxel_pipeline_frostbite(hair_voxel_frostbite_pipeline, *this);
+        //vulkan::HairStyle::dom_pipeline(hair_dom_pipeline, *this, imgui.parameters.dom_layers);
+        vulkan::LinkedList::build_pipeline_frostbite(ppll_blend_pipeline_frostbite, *this);
     }
 
     void Rasterizer::build_render_passes() {
@@ -611,6 +677,10 @@ namespace vkhr {
         if (recompile_pipeline_shaders(hair_style_pipeline)) vulkan::HairStyle::build_pipeline(hair_style_pipeline, *this);
         if (recompile_pipeline_shaders(model_mesh_pipeline)) vulkan::Model::build_pipeline(model_mesh_pipeline, *this);
         if (recompile_pipeline_shaders(billboards_pipeline)) vulkan::Billboard::build_pipeline(billboards_pipeline, *this);
+
+        if (recompile_pipeline_shaders(frostbite_hair_style_pipeline)) vulkan::HairStyle::build_frostbite_pipeline(frostbite_hair_style_pipeline, *this);
+        if (recompile_pipeline_shaders(hair_voxel_frostbite_pipeline)) vulkan::HairStyle::voxel_pipeline_frostbite(hair_voxel_frostbite_pipeline, *this);
+        //if (recompile_pipeline_shaders(hair_dom_pipeline)) vulkan::HairStyle::dom_pipeline(hair_dom_pipeline, *this, imgui.parameters.dom_layers);
     }
 
     bool Rasterizer::recompile_pipeline_shaders(Pipeline& pipeline) {
@@ -629,6 +699,10 @@ namespace vkhr {
         hair_style_pipeline = {};
         model_mesh_pipeline = {};
         billboards_pipeline = {};
+
+        frostbite_hair_style_pipeline = {};
+        hair_voxel_frostbite_pipeline = {};
+        //hair_dom_pipeline = {};
     }
 
     void Rasterizer::destroy_render_passes() { 

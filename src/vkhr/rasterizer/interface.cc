@@ -222,6 +222,7 @@ namespace vkhr {
 
             if (current_renderer == Renderer::Type::Frostbite) {
                 ImGui::PushItemWidth(94);
+                //ImGui::DragInt("Deep opacity maps Layers", &parameters.dom_layers, 1, 0, 100);
                 ImGui::DragFloat("longitudinal width", &parameters.longitudinal_width, 0.1);
                 ImGui::DragFloat("longitudinal shift", &parameters.longitudinal_shift, 0.1);
                 ImGui::DragFloat("index of refraction", &parameters.refraction_index, 0.01);

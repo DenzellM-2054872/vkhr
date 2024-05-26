@@ -38,6 +38,38 @@ float fresnelPer(float eta_2, float theta)
     return min(1, R * R);
 }
 
+float fresnelPar2(float eta_2, float theta)
+{
+    float eta_1 = 1;
+
+    float cos_gamma_i = cos(theta);
+    float cos_gamma_t = asin(sin(theta) / eta_2);
+
+    float R =   (eta_2 * cos_gamma_i - eta_1 * cos_gamma_t) /
+                (eta_2 * cos_gamma_i + eta_1 * cos_gamma_t);
+
+    return min(1, R * R);
+}
+
+float fresnelPer2(float eta_2, float theta)
+{
+    float eta_1 = 1;
+
+    float cos_gamma_i = cos(theta);
+    float cos_gamma_t = asin(sin(theta) / eta_2);
+
+    float R =   (eta_1 * cos_gamma_i - eta_2 * cos_gamma_t) /
+                (eta_1 * cos_gamma_i + eta_2 * cos_gamma_t);
+
+    return min(1, R * R);
+}
+
+float F_02(float eta_parallel, float eta_perpendic, float theta)
+{
+
+    return 0.5f * (fresnelPer2(eta_perpendic, theta) +
+        fresnelPar2(eta_parallel, theta));
+}
 float F_0(float eta_parallel, float eta_perpendic, float theta)
 {
 

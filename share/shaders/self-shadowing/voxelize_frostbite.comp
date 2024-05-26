@@ -1,0 +1,336 @@
+#version 460 core
+
+#include "../volumes/sample_volume.glsl"
+#include "../strands/strand.glsl"
+#include "../scene_graph/camera.glsl"
+#include "../volumes/bounding_box.glsl"
+#include "../scene_graph/lights.glsl"
+
+
+
+layout(local_size_x = 512) in;
+
+
+// rgb values for variance, alpha is lowest amount of bounces
+layout(binding = 3, r8) uniform image3D strand_variance;
+
+// rgb values for transmitance, alpha is direct fraction
+layout(binding = 4, r8) uniform image3D strand_transmitance;
+
+layout(std430, binding = 5) buffer Vertices {
+    vec3 position[];
+};
+
+layout(std430, binding = 6) buffer Tangents {
+    vec3 tang[];
+};
+
+struct Ray {
+    vec3 origin;
+    vec3 direction;
+    int bounces;
+    vec3 transmitance;
+    vec3 variance;
+};
+
+int max_bounces = 8;
+int ray_samples = 8;
+
+uint PCG_Hash(uint seed){
+    uint state = seed * 747796405u + 2891336453u;
+    uint  word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+    return (word >> 22u) ^ word;
+}
+
+float rand_f(uint seed){
+    seed = PCG_Hash(seed);
+    return (seed / (pow(2, 32) - 1));
+}
+
+
+float calc_distance_squared(vec3 a, vec3 b){
+    float x_2 = pow(a.x - b.x, 2);
+    float y_2 = pow(a.y - b.y, 2);
+    float z_2 = pow(a.z - b.z, 2);
+
+    return (x_2 + y_2 + z_2);
+}
+
+
+
+vec4 closest_hit(Ray ray){
+    vec3 direction = normalize(ray.origin - ray.direction);
+    bool is_set = false;
+    vec4 closest = vec4(0);
+    for(int i = 0; i > vertex_count; i++){
+        float mult = direction.x / position[i].x;
+
+        if(direction.y / position[i].y != mult) continue;
+        if(direction.z / position[i].z != mult) continue;
+
+        if(!is_set || calc_distance_squared(ray.origin, closest.xyz) > calc_distance_squared(ray.origin, position[i])){
+            closest = vec4(position[i], 1);
+            is_set = true;
+        }
+    }
+
+    return closest;
+}
+Ray[8] get_rays(Ray ray, vec3 dir, vec3 voxel){
+    Ray rays[8];
+
+    Ray ray0;
+    ray0.origin = voxel;
+    ray0.direction = normalize(vec3(dir.x, dir.y, dir.z));
+    ray0.bounces = ray.bounces;
+    ray0.transmitance =  ray.transmitance;
+    ray0.variance =  ray.variance;
+    rays[0] = ray0;
+
+    Ray ray1;
+    ray1.origin = voxel;
+    ray1.direction = normalize(vec3(-dir.x, dir.y, dir.z));
+    ray1.bounces = ray.bounces;
+    ray1.transmitance =  ray.transmitance;
+    ray1.variance =  ray.variance;
+    rays[1] = ray1;
+
+    Ray ray2;
+    ray2.origin = voxel;
+    ray2.direction = normalize(vec3(dir.x, -dir.y, dir.z));
+    ray2.bounces = ray.bounces;
+    ray2.transmitance =  ray.transmitance;
+    ray2.variance =  ray.variance;
+    rays[2] = ray2;
+
+    Ray ray3;
+    ray3.origin = voxel;
+    ray3.direction = normalize(vec3(dir.x, dir.y, -dir.z));
+    ray3.bounces = ray.bounces;
+    ray3.transmitance =  ray.transmitance;
+    ray3.variance =  ray.variance;
+    rays[3] = ray3;
+
+    Ray ray4;
+    ray4.origin = voxel;
+    ray4.direction = normalize(vec3(-dir.x, -dir.y, dir.z));
+    ray4.bounces = ray.bounces;
+    ray4.transmitance =  ray.transmitance;
+    ray4.variance =  ray.variance;
+    rays[4] = ray4;
+
+    Ray ray5;
+    ray5.origin = voxel;
+    ray5.direction = normalize(vec3(-dir.x, dir.y, -dir.z));
+    ray5.bounces = ray.bounces;
+    ray5.transmitance =  ray.transmitance;
+    ray5.variance =  ray.variance;
+    rays[5] = ray5;
+
+    Ray ray6;
+    ray6.origin = voxel;
+    ray6.direction = normalize(vec3(dir.x, -dir.y, -dir.z));
+    ray6.bounces = ray.bounces;
+    ray6.transmitance =  ray.transmitance;
+    ray6.variance =  ray.variance;
+    rays[6] = ray6;
+
+    Ray ray7;
+    ray7.origin = voxel;
+    ray7.direction = normalize(vec3(-dir.x, -dir.y, -dir.z));
+    ray7.bounces = ray.bounces;
+    ray7.transmitance =  ray.transmitance;
+    ray7.variance =  ray.variance;
+    rays[7] = ray7;
+
+    return rays;
+}
+
+vec4 it_be_bouncing(Ray ray){
+    vec4 closest = closest_hit(ray);
+    //the ray hit nothing
+    if(closest.a == 0) return vec4(0);
+    vec3 voxel_size = volume_bounds.size / volume_resolution;
+    vec3 voxel = (closest.xyz - volume_bounds.origin) / voxel_size;
+    vec4 var = imageLoad(strand_transmitance, ivec3(voxel));
+
+    if(ray.bounces < var.a){
+        if(ray.bounces == 0){
+            imageStore(strand_transmitance, ivec3(voxel), vec4(ray.transmitance, 0));
+            imageStore(strand_variance, ivec3(voxel), vec4(ray.variance, 1));
+        }else{
+        //calculate the values
+        }
+    }
+    return vec4(voxel, 1);
+}
+
+void do_it_bounce8(Ray ray){
+    it_be_bouncing(ray);
+}
+
+void do_it_bounce7(Ray ray){
+    vec4 voxel = it_be_bouncing(ray);
+    if(voxel.a == 0) return;
+
+    if(ray.bounces >= max_bounces) return;
+    ray.bounces += 1;
+
+    float x = rand_f(gl_GlobalInvocationID.x + ray.bounces + 100);
+    float y = rand_f(gl_GlobalInvocationID.x + ray.bounces + 200);
+    float z = rand_f(gl_GlobalInvocationID.x + ray.bounces + 300);
+
+    Ray rays[8] = get_rays(ray, vec3(x, y, z), voxel.xyz);
+
+    for(int i = 0; i < 8; ++i){
+        do_it_bounce8(rays[i]);
+    }
+}
+
+void do_it_bounce6(Ray ray){
+
+    vec4 voxel = it_be_bouncing(ray);
+    if(voxel.a == 0) return;
+
+    if(ray.bounces >= max_bounces) return;
+    ray.bounces += 1;
+
+    float x = rand_f(gl_GlobalInvocationID.x + ray.bounces + 100);
+    float y = rand_f(gl_GlobalInvocationID.x + ray.bounces + 200);
+    float z = rand_f(gl_GlobalInvocationID.x + ray.bounces + 300);
+
+    Ray rays[8] = get_rays(ray, vec3(x, y, z), voxel.xyz);
+
+    for(int i = 0; i < 8; ++i){
+        do_it_bounce7(rays[i]);
+    }
+}
+
+void do_it_bounce5(Ray ray){
+
+    vec4 voxel = it_be_bouncing(ray);
+    if(voxel.a == 0) return;
+    
+    if(ray.bounces >= max_bounces) return;
+    ray.bounces += 1;
+
+    float x = rand_f(gl_GlobalInvocationID.x + ray.bounces + 100);
+    float y = rand_f(gl_GlobalInvocationID.x + ray.bounces + 200);
+    float z = rand_f(gl_GlobalInvocationID.x + ray.bounces + 300);
+
+    Ray rays[8] = get_rays(ray, vec3(x, y, z), voxel.xyz);
+
+    for(int i = 0; i < 8; ++i){
+        do_it_bounce6(rays[i]);
+    }
+}
+
+void do_it_bounce4(Ray ray){
+
+    vec4 voxel = it_be_bouncing(ray);
+    if(voxel.a == 0) return;
+    
+    if(ray.bounces >= max_bounces) return;
+    ray.bounces += 1;
+
+    float x = rand_f(gl_GlobalInvocationID.x + ray.bounces + 100);
+    float y = rand_f(gl_GlobalInvocationID.x + ray.bounces + 200);
+    float z = rand_f(gl_GlobalInvocationID.x + ray.bounces + 300);
+
+    Ray rays[8] = get_rays(ray, vec3(x, y, z), voxel.xyz);
+
+    for(int i = 0; i < 8; ++i){
+        do_it_bounce5(rays[i]);
+    }
+}
+
+void do_it_bounce3(Ray ray){
+
+    vec4 voxel = it_be_bouncing(ray);
+    if(voxel.a == 0) return;
+    
+    if(ray.bounces >= max_bounces) return;
+    ray.bounces += 1;
+
+    float x = rand_f(gl_GlobalInvocationID.x + ray.bounces + 100);
+    float y = rand_f(gl_GlobalInvocationID.x + ray.bounces + 200);
+    float z = rand_f(gl_GlobalInvocationID.x + ray.bounces + 300);
+
+    Ray rays[8] = get_rays(ray, vec3(x, y, z), voxel.xyz);
+
+    for(int i = 0; i < 8; ++i){
+        do_it_bounce4(rays[i]);
+    }
+}
+
+void do_it_bounce2(Ray ray){
+
+    vec4 voxel = it_be_bouncing(ray);
+    if(voxel.a == 0) return;
+    
+    if(ray.bounces >= max_bounces) return;
+    ray.bounces += 1;
+
+    float x = rand_f(gl_GlobalInvocationID.x + ray.bounces + 100);
+    float y = rand_f(gl_GlobalInvocationID.x + ray.bounces + 200);
+    float z = rand_f(gl_GlobalInvocationID.x + ray.bounces + 300);
+
+    Ray rays[8] = get_rays(ray, vec3(x, y, z), voxel.xyz);
+
+    for(int i = 0; i < 8; ++i){
+        do_it_bounce3(rays[i]);
+    }
+}
+
+void do_it_bounce1(Ray ray){
+
+    vec4 voxel = it_be_bouncing(ray);
+    if(voxel.a == 0) return;
+    
+    if(ray.bounces >= max_bounces) return;
+    ray.bounces += 1;
+
+    float x = rand_f(gl_GlobalInvocationID.x + ray.bounces + 100);
+    float y = rand_f(gl_GlobalInvocationID.x + ray.bounces + 200);
+    float z = rand_f(gl_GlobalInvocationID.x + ray.bounces + 300);
+
+    Ray rays[8] = get_rays(ray, vec3(x, y, z), voxel.xyz);
+
+    for(int i = 0; i < 8; ++i){
+        do_it_bounce2(rays[i]);
+    }
+}
+
+void do_it_bounce(Ray ray){
+
+    vec4 voxel = it_be_bouncing(ray);
+    if(voxel.a == 0) return;
+    
+    if(ray.bounces >= max_bounces) return;
+    ray.bounces += 1;
+
+    float x = rand_f(gl_GlobalInvocationID.x + ray.bounces + 100);
+    float y = rand_f(gl_GlobalInvocationID.x + ray.bounces + 200);
+    float z = rand_f(gl_GlobalInvocationID.x + ray.bounces + 300);
+
+    Ray rays[8] = get_rays(ray, vec3(x, y, z), voxel.xyz);
+
+    for(int i = 0; i < 8; ++i){
+        do_it_bounce1(rays[i]);
+    }
+}
+
+
+void main() {
+    vec3 voxel_size = volume_bounds.size / volume_resolution;
+    vec3 voxel = (position[gl_GlobalInvocationID.x] - volume_bounds.origin) / voxel_size;
+    Ray ray;
+
+    ray.origin = lights[0].origin;
+    ray.direction = normalize(position[gl_GlobalInvocationID.x]);
+    ray.bounces = 0;
+    ray.transmitance = vec3(1);
+    ray.variance = vec3(0);
+
+    do_it_bounce(ray);
+}

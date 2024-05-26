@@ -50,12 +50,14 @@ vec4 NormalizedCubicSolver(float A, float B, float C)
 
     if (abs(C) < M_EPS)	//	x = 0 solution
     {
+
         roots = QuadraticSolver(1, A, B);
 		roots[int(roots[3])] = 0;
 		roots[3]++;
     }
     else
     {
+
         roots = vec4(0);
 
         float Q = (3 * B - A * A) / 9;
@@ -64,6 +66,7 @@ vec4 NormalizedCubicSolver(float A, float B, float C)
 
         if (D > 0)	// 1 root
         {
+
             float sqrtD = sqrt(D);
             float s = sign(R + sqrtD) * pow(abs(R + sqrtD), 1.0f / 3.0f);
             float t = sign(R - sqrtD) * pow(abs(R - sqrtD), 1.0f / 3.0f);
@@ -73,6 +76,7 @@ vec4 NormalizedCubicSolver(float A, float B, float C)
         }
         else	// 3 roots
         {
+
             float theta = acos(R / sqrt(-(Q * Q * Q)));
             float sqrtQ = sqrt(-Q);
             roots[0] = (2 * sqrtQ * cos(theta / 3) - A / 3);
@@ -88,6 +92,7 @@ vec4 NormalizedCubicSolver(float A, float B, float C)
 
 vec4 cubic_solver(float a, float b, float c, float d)
 {
+
     if (abs(a) < M_EPS)
         return QuadraticSolver(b, c, d);
     else

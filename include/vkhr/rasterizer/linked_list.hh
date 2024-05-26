@@ -24,6 +24,8 @@ namespace vkhr {
             void clear(vk::CommandBuffer& command_buffer);
 
             void resolve(vk::SwapChain& swap_chain, std::uint32_t frame, Pipeline& ppll_resolving_pipeline, vk::CommandBuffer& command_buffers);
+            void sort(std::uint32_t frame, Pipeline& ppll_resolving_pipeline, vk::CommandBuffer& command_buffers);
+            void resolve_frostbite(vk::SwapChain& swap_chain, std::uint32_t frame, Pipeline& ppll_resolving_pipeline, vk::CommandBuffer& command_buffers);
 
             static constexpr std::size_t AverageFragmentsPerPixel = 32; // Only a estimated average fragments per pixel.
             static constexpr std::size_t NodeSize = 12; // { [R, G, B, A], Fragment Depth, Index To Previous Fragment }.
@@ -46,6 +48,8 @@ namespace vkhr {
             vk::StorageBuffer& get_nodes();
 
             static void build_pipeline(Pipeline& pipeline, Rasterizer& rasterizer); // Builds the PPLL resolve pipeline.
+            static void build_sort_pipeline(Pipeline& pipeline, Rasterizer& rasterizer); // Builds the PPLL resolve pipeline.
+            static void build_pipeline_frostbite(Pipeline& pipeline, Rasterizer& rasterizer); // Builds the PPLL resolve pipeline.
 
         private:
             std::size_t width;
@@ -64,6 +68,12 @@ namespace vkhr {
             vk::UniformBuffer parameters;
             vk::StorageBuffer nodes;
 
+
+            vk::DeviceImage   heads_sorted;
+            vk::ImageView     heads_view_sorted;
+            vk::StorageBuffer node_counter_sorted;
+            vk::UniformBuffer parameters_sorted;
+            vk::StorageBuffer nodes_sorted;
             static int id;
         };
     }

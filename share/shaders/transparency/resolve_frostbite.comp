@@ -1,0 +1,33 @@
+#version 460 core
+
+#include "ppll.glsl"
+
+layout(local_size_x = 8,    local_size_y = 8) in;
+layout(binding = 9, rgba8) uniform image2D color;
+
+// Resolve step based on the PPLL code in TressFX:
+// TressFX/amd_tressfx/src/Shader/TressFXPPLL.hlsl
+// with some minor modifications for OpenGL usage.
+
+#define K_BUFFER_SIZE 16
+#define MAX_FRAGMENTS 1024
+
+void main() {
+    ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
+    uint  pixel_head_node = ppll_head_node(pixel);
+    vec4 resolved_color = imageLoad(color, pixel);
+    float prev_depth = PPLL_MAXIMUM_DEPTH;
+
+    while(pixel_head_node != PPLL_NULL_NODE){
+        Node node = ppll_node(pixel_head_node);
+
+
+        vec4 fragment_color = unpackUnorm4x8(node.color);
+        resolved_color = mix(resolved_color, fragment_color, fragment_color.a);
+        pixel_head_node = node.prev;
+        prev_depth = node.depth;
+    }
+
+    imageStore(color, pixel, resolved_color);
+
+}

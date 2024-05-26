@@ -87,13 +87,13 @@ namespace vkhr {
             float lod_minified_distance;
 
             int benchmarking;
-            float longitudinal_width = 8.0f;            // BetaR which sould be between 5 & 10 degrees
-            float longitudinal_shift = 3.0f;            // AlpaR which sould be between -10 & -5 degrees
+            float longitudinal_width = 7.5f;            // BetaR which sould be between 5 & 10 degrees
+            float longitudinal_shift = -7.5;            // AlpaR which sould be between -10 & -5 degrees
             float refraction_index = 1.55;              // Nu should be around 1.55
 
-            float abs_coef_R = 0.44; 
-            float abs_coef_G = 0.64; 
-            float abs_coef_B = 0.90;
+            float abs_coef_R = 0.4; 
+            float abs_coef_G = 0.5; 
+            float abs_coef_B = 0.8;
 
             float caustic_intensity_limit = 0.5;  // 0.5
             float caustic_width = 1.5;            // 10 to 25 degrees
@@ -105,6 +105,7 @@ namespace vkhr {
             int enable_tt = 1;
             int enable_trt = 1;
 
+            int dom_layers = 5;
         } parameters {
             KajiyaKay,
 

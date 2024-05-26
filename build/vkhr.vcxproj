@@ -518,10 +518,12 @@
     <None Include="..\share\shaders\scene_graph\params.glsl" />
     <None Include="..\share\shaders\scene_graph\shadow_maps.glsl" />
     <None Include="..\share\shaders\self-shadowing\approximate_deep_shadows.glsl" />
+    <None Include="..\share\shaders\self-shadowing\voxelize_frostbite.comp" />
     <None Include="..\share\shaders\self-shadowing\depth_map.vert" />
     <None Include="..\share\shaders\self-shadowing\filter_shadows.glsl" />
     <None Include="..\share\shaders\self-shadowing\linearize_depth.glsl" />
     <None Include="..\share\shaders\self-shadowing\tex2Dproj.glsl" />
+    <None Include="..\share\shaders\shading\dual-scattering.glsl" />
     <None Include="..\share\shaders\shading\kajiya-kay-diffuse.glsl" />
     <None Include="..\share\shaders\shading\kajiya-kay.glsl" />
     <None Include="..\share\shaders\shading\lambertian.glsl" />
@@ -532,7 +534,11 @@
     <None Include="..\share\shaders\strands\strand.glsl" />
     <None Include="..\share\shaders\strands\strand.vert" />
     <None Include="..\share\shaders\transparency\ppll.glsl" />
+    <None Include="..\share\shaders\transparency\ppll_frostbite.glsl" />
+    <None Include="..\share\shaders\transparency\ppll_sorted.glsl" />
     <None Include="..\share\shaders\transparency\resolve.comp" />
+    <None Include="..\share\shaders\transparency\resolve_frostbite.comp" />
+    <None Include="..\share\shaders\transparency\sort_ppll.comp" />
     <None Include="..\share\shaders\utils\cubic_solver.glsl" />
     <None Include="..\share\shaders\utils\fresnel.glsl" />
     <None Include="..\share\shaders\utils\math.glsl" />

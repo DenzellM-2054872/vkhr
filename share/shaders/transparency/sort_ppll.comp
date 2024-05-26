@@ -1,0 +1,251 @@
+#version 460 core
+
+#include "ppll.glsl"
+#include "ppll_sorted.glsl"
+
+layout(local_size_x = 8,    local_size_y = 8) in;
+
+// Resolve step based on the PPLL code in TressFX:
+// TressFX/amd_tressfx/src/Shader/TressFXPPLL.hlsl
+// with some minor modifications for OpenGL usage.
+
+#define K_BUFFER_SIZE 16
+#define MAX_FRAGMENTS 1024
+
+int nodeCount = 0;
+Node nodes[MAX_FRAGMENTS];
+
+#define SORT_MERGE 1
+#define SORT_LAMP 0
+#define SORT_BITONIC 0
+#define SORT_BUBBLE 0
+#define SORT_INSERT 0
+#define SORT_SELECT 0
+#define SORT_SHELL 0
+
+#if SORT_SHELL
+void sortNodes()
+{
+	int inc = nodeCount / 2;
+	while (inc > 0)
+	{
+		for (int i = inc; i < nodeCount; ++i)
+		{
+			Node tmp = nodes[i];
+			int j = i;
+			while (j >= inc && nodes[j - inc].depth > tmp.depth)
+			{
+				nodes[j] = nodes[j - inc];
+				j -= inc;
+			}
+			nodes[j] = tmp;
+		}
+		inc = int(inc / 2.2 + 0.5);
+	}
+}
+#endif
+	
+#if SORT_MERGE
+Node leftArray[MAX_FRAGMENTS/2];
+void merge(int step, int a, int b, int c)
+{
+	int i;
+	for (i = 0; i < step; ++i)
+		leftArray[i] = nodes[a+i];
+
+	i = 0;
+	int j = 0;
+	for (int k = a; k < c; ++k)
+	{
+		if (b+j >= c || (i < step && leftArray[i].depth < nodes[b+j].depth))
+			nodes[k] = leftArray[i++];
+		else
+			nodes[k] = nodes[b+j++];
+	}
+}
+void sortNodes()
+{
+	int n = nodeCount;
+	int step = 1;
+	while (step <= n)
+	{
+		int i = 0;
+		while (i < n - step)
+		{
+			merge(step, i, i + step, min(i + step + step, n));
+			i += 2 * step;
+		}
+		step *= 2;
+	}
+}
+#endif
+
+#if SORT_LAMP
+void addInterval(int[MAX_FRAGMENTS] intervals, int low, int high, int intervalCount){
+	intervals[intervalCount * 2] = low;
+	intervals[intervalCount * 2 + 1] = high;
+}
+
+void sortNodes() {
+	if(nodeCount == 0) return;
+    Node tmp;
+	if(nodeCount == 2){
+	    if (nodes[0].depth > nodes[1].depth) {
+        tmp = nodes[0];
+        nodes[0] = nodes[1];
+        nodes[1] = tmp;
+		}
+	}
+    int[MAX_FRAGMENTS] intervals;
+    int intervalCount = 0;
+	intervals[intervalCount * 2] = 0;
+	intervals[intervalCount * 2 + 1] = nodeCount - 1;
+    ++intervalCount;
+
+    while (intervalCount > 0) {
+        --intervalCount;
+        int low = intervals[intervalCount * 2];
+        int high = intervals[intervalCount * 2 + 1];
+        int span = high - low;
+
+		//if(low > high) return;
+		//if(low < 0 || low >= nodeCount) return;
+		if(high > nodeCount) return;
+
+        if (span >= 2) {
+            int pivotInd = low;
+            Node pivot = nodes[high];
+
+            for (int i = low; i < high; i++) {
+                if (nodes[i].depth < pivot.depth) {
+                    tmp = nodes[i];
+                    nodes[i] = nodes[pivotInd];
+                    nodes[pivotInd] = tmp;
+                    pivotInd++;
+                }
+            }
+
+            tmp = nodes[high];
+            nodes[high] = nodes[pivotInd];
+            nodes[pivotInd] = tmp;
+
+			intervals[intervalCount * 2] = low;
+			intervals[intervalCount * 2 + 1] = max(low, pivotInd - 1);
+			++intervalCount;
+			
+			intervals[intervalCount * 2] = min(pivotInd + 1, high);
+			intervals[intervalCount * 2 + 1] = high;
+			++intervalCount;
+        }
+        else if (span == 1) {
+            if (nodes[low].depth > nodes[high].depth) {
+                tmp = nodes[low];
+                nodes[low] = nodes[high];
+                nodes[high] = tmp;
+            }
+        }
+
+    }
+}
+#endif
+
+#if SORT_BITONIC
+void comparator(int i, int j) {
+  if (i < j && j < nodeCount && nodes[j].depth < nodes[i].depth){
+	Node tmp = nodes[i];
+	nodes[i] = nodes[j];
+	nodes[j] = tmp;
+  }
+}
+void sortNodes() {
+  for (int k = 2; (k >> 1) < nodeCount; k <<= 1) {
+    for (int i = 0; i < nodeCount; i++)
+      comparator(i, i ^ (k - 1));
+    for (int j = k >> 1; 0 < j; j >>= 1)
+      for (int i = 0; i < nodeCount; i++)
+        comparator(i, i ^ j);
+  }
+}
+#endif
+
+#if SORT_BUBBLE
+void sortNodes()
+{
+	Node t;
+	for (int i = 0; i < nodeCount-1; ++i)
+	{
+		for (int j = i+1; j < nodeCount; ++j)
+		{
+			if (nodes[j].depth < nodes[i].depth)
+			{
+				t = nodes[i];
+				nodes[i] = nodes[j];
+				nodes[j] = t;
+			}
+		}
+	}
+}
+#endif
+
+#if SORT_INSERT
+void sortNodes()
+{
+	for (int j = 1; j < nodeCount; ++j)
+	{
+		Node key = nodes[j];
+		int i = j - 1;
+		while (i >= 0 && nodes[i].depth > key.depth)
+		{
+			nodes[i+1] = nodes[i];
+			--i;
+		}
+		nodes[i+1] = key;
+	}
+}
+#endif
+
+#if SORT_SELECT
+void sortNodes()
+{
+	vec4 t;
+	for (int j = 0; j < nodeCount-1; ++j)
+	{
+		int swap = j;
+		for (int i = j+1; i < nodeCount; ++i)
+		{
+			if (nodes[swap].depth > nodes[i].depth)
+				swap = i;
+		}
+		t = nodes[swap];
+		nodes[swap] = nodes[j];
+		nodes[j] = t;
+	}
+}
+#endif
+
+void main() {
+    ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
+    uint  pixel_head_node = ppll_head_node(pixel);
+
+    if (pixel_head_node == PPLL_NULL_NODE) return;
+
+    while(pixel_head_node != PPLL_NULL_NODE){
+        nodes[nodeCount] = ppll_node(pixel_head_node);
+        pixel_head_node = nodes[nodeCount].prev;
+        ++nodeCount;
+    }
+
+    sortNodes();
+
+	uint prevInd = PPLL_NULL_NODE;
+	for(int i  = 0; i < nodeCount; ++i){
+	    uint nodeInd = ppll_next_node_sorted();
+		if (nodeInd == PPLL_NULL_NODE) return;
+		nodes[i].prev = prevInd;
+		ppll_node_data_sorted(nodeInd, nodes[i]);
+		if(i == nodeCount - 1){
+			ppll_set_head_sorted(pixel, nodeInd);
+		}
+		prevInd = nodeInd;
+	}
+}

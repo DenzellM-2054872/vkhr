@@ -41,12 +41,15 @@ namespace vkhr {
 
         void draw_depth(const SceneGraph& scene_graph, vk::CommandBuffer& command_buffer);
         void draw_model(const SceneGraph& scene_graph, Pipeline& pipeline, vk::CommandBuffer& command_buffer, glm::mat4 = glm::mat4{ 1.0f });
+        //void draw_deep_opacity_maps(const SceneGraph& scene_graph, vk::CommandBuffer& command_buffer);
         void draw_color(const SceneGraph& scene_graph, vk::CommandBuffer& command_buffer);
         void draw_color_frostbite(const SceneGraph& scene_graph, vk::CommandBuffer& command_buffer);
         void draw_hairs(const SceneGraph& scene_graph, Pipeline& pipeline, vk::CommandBuffer& command_buffer, glm::mat4 = glm::mat4{ 1.0f });
-        void draw_hairs_frostbite(const SceneGraph& scene_graph, Pipeline& pipeline, vk::CommandBuffer& command_buffer, glm::mat4 = glm::mat4 { 1.0f });
         void voxelize(const SceneGraph& a_scene_graph, vk::CommandBuffer& command_buffer);
 
+        void draw_hairs_frostbite(const SceneGraph& scene_graph, Pipeline& pipeline, vk::CommandBuffer& command_buffer, glm::mat4 = glm::mat4 { 1.0f });
+        //void voxelize_frostbite(const SceneGraph& a_scene_graph, vk::CommandBuffer& command_buffer);
+        
         // Direct Volume Render (DVR) the hair strands. This needs to be done after drawing models and styles.
         void strand_dvr(const SceneGraph& scene_graph, Pipeline& pipeline, vk::CommandBuffer& command_buffer);
 
@@ -117,11 +120,15 @@ namespace vkhr {
         std::vector<vk::UniformBuffer> params;
 
         Pipeline hair_depth_pipeline;
+        //Pipeline hair_dom_pipeline;
         Pipeline mesh_depth_pipeline;
         Pipeline hair_voxel_pipeline;
+        Pipeline hair_voxel_frostbite_pipeline;
 
         Pipeline strand_dvr_pipeline;
         Pipeline ppll_blend_pipeline;
+        Pipeline ppll_sort_pipeline;
+        Pipeline ppll_blend_pipeline_frostbite;
 
         Pipeline hair_style_pipeline;
         Pipeline frostbite_hair_style_pipeline;
@@ -134,6 +141,7 @@ namespace vkhr {
         vulkan::Billboard fullscreen_billboard;
 
         vulkan::LinkedList ppll;
+        //vulkan::LinkedList ppll_frostbite;
 
         Interface imgui;
 

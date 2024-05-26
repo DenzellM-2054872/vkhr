@@ -2,6 +2,8 @@
 #define VKHR_MARSCHENER_GLSL
 
 #include "../scene_graph/params.glsl"
+#include "../utils/fresnel.glsl"
+#include "../utils/cubic_solver.glsl"
 
 float normal_pdf(float x, float m, float s)
 {
@@ -11,6 +13,12 @@ float normal_pdf(float x, float m, float s)
     return (1 / abs(s)) * inv_sqrt_2pi * exp(- (a * a) / (2 * s * s));
 }
 
+float normal_pdf(float x_m, float s)
+{
+    const float inv_sqrt_2pi = 0.3989422804014327;
+
+    return (1 / abs(s)) * inv_sqrt_2pi * exp(-(x_m * x_m) / (2 * s * s));
+}
 
 vec3 T(vec3 absorb, float gamma_t)
 {
@@ -54,10 +62,17 @@ vec4 calc_roots(int p, float eta_perpendic, float phi)
 
 float B_index(float theta, float eta)
 {
-    if(eta == 1.55) return 1.19 / cos(theta) + 0.36 * cos(theta);
+    //if(eta == 1.55) return 1.19 / cos(theta) + 0.36 * cos(theta);
 
     float sin_theta = sin(theta);
     return sqrt(eta * eta - sin_theta * sin_theta) / cos(theta);
+}
+
+float C_index(float theta, float eta)
+{
+    float sin_theta = sin(theta);
+    //return eta  * cos(theta) / (sqrt(1 - pow(eta, -2) * pow(sin(theta), 2)));
+    return eta * eta * cos(theta) / (sqrt(eta * eta - sin_theta * sin_theta));
 }
 
 
@@ -69,6 +84,18 @@ float inv_first_der(int p, float eta_perpendic, float h)
 		3 * 8 * (p * c / (M_PI * M_PI * M_PI)) * gamma_i * gamma_i;
 
     return sqrt(1 - h * h) / d_gamma;
+    //return pow((6 * p * c / M_PI * sqrt(1 - h * h)) - (2 / sqrt(1 - h * h)) - (3 * 8 * (p * c / (M_PI * M_PI * M_PI * sqrt(1 - pow(h, 6))))), -1);
+    //return 1 / d_gamma;
+}
+
+float first_der(int p, float eta_perpendic, float h)
+{
+    float gamma_i = asin(h);
+    float c = asin(1 / eta_perpendic);
+    float d_gamma = ((6 * p * c / M_PI) - 2) -
+        3 * 8 * (p * c / (M_PI * M_PI * M_PI)) * gamma_i * gamma_i;
+
+    return d_gamma / sqrt(1 - h * h);
 }
 
 float inv_second_der(int p, float eta_perpendic, float h)
@@ -97,19 +124,18 @@ vec3 NP(int p, float phi, float theta_d, float eta_perpendic, float eta_parallel
 {
     vec4 roots = calc_roots(p , eta_perpendic, phi);
     vec3 res = vec3(0);
-
+    if (p == 2 && roots[3] == 4) return vec3(1, 0, 0);
     for (int i = 0; i < roots[3]; i++ )
     {
         float gamma_i = roots[i];
         float h = sin(gamma_i);
-        //if(h > M_EPS) continue;
+//        if(h < M_EPS) continue;
 
         vec3 finalAbsorption = attenuation(absorb, p, h, eta_perpendic, eta_parallel, theta_d);
-        float inverseDerivateAngle = inv_first_der(p, eta_perpendic, h);
-        res += finalAbsorption * 2 * abs(inverseDerivateAngle); //0.5 here
+        float inverseDerivateAngle = 1 / abs((2 * first_der(p, eta_perpendic, h)));
+        res += finalAbsorption * inverseDerivateAngle; 
     }
-    vec3 final_res = vec3(min(res.r, 1), min(res.g, 1), min(res.b, 1));
-    return final_res;
+    return vec3(min(res.r, 1), min(res.g, 1), min(res.b, 1));
 }
 
 vec3 NP_R(float phi, float theta_d, float eta_perpendic, float eta_parallel)
@@ -127,12 +153,9 @@ vec3 NP_R(float phi, float theta_d, float eta_perpendic, float eta_parallel)
 
 vec3 NP_R_K(float phi, float theta_d, float eta_perpendic, float eta_parallel, float view_light_angle)
 {
-    //this is how it is described in the frostbite paper
-    //at certain angles this stops working mb figure out why later
-    // why does this work with -abs but not normal abs
     vec3 res = vec3(0.25 * cos(phi / 2));
-    res *= vec3(F_0(eta_perpendic, eta_parallel, sqrt(-abs(0.5 * (radians(1) + view_light_angle)))));
-
+    res *= vec3(fresnel2(refraction_index, sqrt(0.5 * (1 + view_light_angle))));
+//    res *= 3.1;   //this makes the graphs closer; expect more of these magical scalers going forward
     return vec3(min(1, res.r),min(1, res.g), min(1, res.b));
 }
 
@@ -149,21 +172,25 @@ float calc_h_2_tt(float phi, float a){
 }
 vec3 NP_TT_K(float phi, float theta_d, float eta_perpendic, float eta_parallel, vec3 hair_color)
 {
-    float a = 1/eta_perpendic;
-    float h2 = calc_h_2_tt(phi, a);
 
-    float exponent = sqrt(1 - h2 * (a * a)) / (2 * cos(theta_d));
+    float a = 1 / eta_perpendic;
+    //float h = calc_h_tt(phi, a);
+    float h = 0;
+
+    float exponent = sqrt(1 - h * (a * a)) / (2 * cos(theta_d));
     vec3 t = vec3(pow(hair_color.r, exponent), pow(hair_color.g, exponent), pow(hair_color.b, exponent));
 
-    float fres_angle = cos(theta_d) * sqrt(1 - h2);
-    float fres = fresnel(eta_parallel, eta_perpendic, fres_angle);
+    float fres_angle = -0.65 * cos(theta_d) * sqrt(1 - h);
+    float fres = fresnel2(refraction_index, fres_angle);
 
+    //float fres = fresnel(eta_parallel, eta_perpendic, fres_angle);
     //given that p = 1: p-1 = 0 -> pow(x, 0) = 1 and thus can be ignored
     vec3 att = (1 - fres) * (1 - fres) * t;
     
     //from the karis paper (quite difrent then the original)
-    float distrib = exp(-3.65 * cos(phi) - 3.98);
-    vec3 res = att * distrib;
+    float distrib = clamp(exp(-3.65 * cos(phi) - 3.98),0 , 0.01);
+    vec3 res = att * 0.3 * distrib; 
+    //vec3 res = att  * 1.2 * distrib; //another magic scaler :)
 
     vec3 final_res = vec3(min(res.r, 1), min(res.g, 1), min(res.b, 1));
     return final_res;
@@ -172,46 +199,45 @@ vec3 NP_TT_K(float phi, float theta_d, float eta_perpendic, float eta_parallel, 
 vec3 NP_TRT(float phi, float theta_d, float eta_perpendic, float eta_parallel, vec3 absorb)
 {
     float delta_hM = caustic_intensity_limit;
-    float w_c = caustic_width * M_PI / 180;
+    float w_c = caustic_width;
     float k_G = glint_scale_fac;
     float delta_eta_tick = caustic_merge_range;
 
-    float h_c = 0;
-    float delta_h, t, phi_c;
+    float delta_h, t, phi_c, h_c;
 
     if (eta_perpendic < 2)
     {
         float c = asin(1 / eta_perpendic);
-        phi_c = sqrt((6 * 2 * c / M_PI - 2) / 
-			(3 * 8 * (2 * c / (M_PI * M_PI * M_PI))));
-        h_c = abs(sin(phi_c));
+        h_c = sqrt((4 - eta_perpendic * eta_perpendic) / 3);
+        phi_c = (-8 * (2 * c / (M_PI * M_PI * M_PI))) * pow(asin(h_c), 3) + ((6 * 2 * c / M_PI) - 2) * asin(h_c) + 2 * M_PI;
+        //phi_c = sqrt((6 * 2 * c / M_PI - 2) / (3 * 8 * (2 * c / (M_PI * M_PI * M_PI))));
+        //h_c = abs(sin(phi_c));
 
         float inv_der_angle = inv_second_der(2, eta_perpendic, h_c);
-
         delta_h = min(delta_hM, 2 * sqrt(2 * w_c * inv_der_angle));
         t = 1;
     } else {
-
         phi_c = 0;
+        h_c = 0;
         delta_h = delta_hM;
         t = 1 - smoothstep(2, 2 + delta_eta_tick, eta_perpendic);
     }
 
-    phi_c = angle_polynomial(2, eta_perpendic, h_c);
+    //phi_c = angle_polynomial(2, eta_perpendic, h_c);
     vec3 res = NP(2, phi, theta_d, eta_perpendic, eta_parallel, absorb);
     vec3 final_abs = attenuation(absorb, 2, h_c, eta_perpendic, eta_parallel, theta_d);
 
-    res = res * (1 - t * normal_pdf(phi, phi_c, w_c) / normal_pdf(0, 0, w_c));
-    res = res * (1 - t * normal_pdf(phi, -phi_c, w_c) / normal_pdf(0, 0, w_c));
-    res = res + t * k_G * final_abs * delta_h * (normal_pdf(phi, phi_c, w_c) + normal_pdf(phi, -phi_c, w_c));
+    res = res * (1 - t * normal_pdf(phi - phi_c, w_c) / normal_pdf(0, w_c));
+    res = res * (1 - t * normal_pdf(phi + phi_c, w_c) / normal_pdf(0, w_c));
+    res = res + t * k_G * final_abs * delta_h * (normal_pdf(phi - phi_c, w_c) + normal_pdf(phi + phi_c, w_c));
 
     return vec3(min(1, res.r),min(1, res.g), min(1, res.b));
 }
 
-vec3 NP_TRT_K(float phi, float theta_d, float eta_perpendic, float eta_parallel, vec3 hiar_color, float beta_n)
+vec3 NP_TRT_K(float phi, float theta_d, float eta_perpendic, float eta_parallel, vec3 hair_color, float beta_n)
 {
     // should be clamped but idk to what values
-    float scale = 1.5 * (1 - beta_n);
+    float scale = 1;
     float distrib = scale * exp(scale * (17 * cos(phi) - 16.78));
 
     float h = sqrt(3) / 2;
@@ -222,14 +248,31 @@ vec3 NP_TRT_K(float phi, float theta_d, float eta_perpendic, float eta_parallel,
     vec3 t_pow = vec3(pow(t.r, 2), pow(t.g, 2), pow(t.b, 2));
 
     float fres_angle = cos(theta_d) * sqrt(1 - pow(h, 2));
-    float fres = fresnel2(eta_perpendic, fres_angle);
+    float fres = fresnel2(refraction_index, fres_angle);
 
     //given that p = 2: p-1 = 1 -> pow(x, 1) = x and thus can be ignored
     vec3 att = (1 - fres) * (1 - fres) * fres * t_pow;
 
-    vec3 res = att * distrib;
-    return vec3(min(1, res.r),min(1, res.g), min(1, res.b));
+    vec3 res = att * 1 * distrib; // another magic scaler :>
+
+    return  vec3(min(1, res.r),min(1, res.g), min(1, res.b));
 }
+
+vec3 get_R(float phi, float theta_d, float eta_perpendic, float eta_parallel, float view_light_angle, vec3 abs_coef, bool using_karis) {
+    if (using_karis) return NP_R_K( phi, theta_d, eta_perpendic, eta_parallel, view_light_angle);
+    return NP(0, phi, theta_d, eta_perpendic, eta_parallel, abs_coef);
+}
+
+vec3 get_TT(float phi, float theta_d, float eta_perpendic, float eta_parallel, vec3 hair_color, vec3 abs_coef, bool using_karis) {
+    if (using_karis) return NP_TT_K(phi, theta_d, eta_perpendic, eta_parallel, hair_color);
+    return  NP(1, phi, theta_d, eta_perpendic, eta_parallel, abs_coef);
+}
+
+vec3 get_TRT(float phi, float theta_d, float eta_perpendic, float eta_parallel, float long_width_R, vec3 hair_color, vec3 abs_coef, bool using_karis) {
+    if (using_karis) return NP_TRT_K(phi, theta_d, eta_perpendic, eta_parallel, hair_color, long_width_R);
+     return NP_TRT(phi, theta_d, eta_perpendic, eta_parallel, abs_coef);
+}
+
 vec3 marschener(vec3 tangent, vec3 viewDirection, vec3 lightDirection, vec3 light_bulb_color, vec3 abs_coef, vec3 hair_color){
     float long_width_R = radians(longitudinal_width);     //Beta R im pretty sure these are fine in degrees -- spoiler allert they werent
     float long_width_TT = long_width_R / 2;      //Beta TT
@@ -260,7 +303,7 @@ vec3 marschener(vec3 tangent, vec3 viewDirection, vec3 lightDirection, vec3 ligh
     
 
     float eta_perpendic = B_index(theta_d, refraction_index);
-    float eta_parallel = (refraction_index * refraction_index) / eta_perpendic;
+    float eta_parallel =  C_index(theta_d, refraction_index);
 
     float M_R   = normal_pdf(theta_h, long_shift_R, long_width_R);
     float M_TT  = normal_pdf(theta_h, long_shift_TT, long_width_TT);
@@ -269,7 +312,7 @@ vec3 marschener(vec3 tangent, vec3 viewDirection, vec3 lightDirection, vec3 ligh
     vec3 N_R = vec3(0), N_TT = vec3(0), N_TRT = vec3(0);
     if(karis_mode == 1)
     {
-        if(enable_r == 1)  N_R   = NP_R_K(phi, theta_d, eta_perpendic, eta_parallel, dot(viewDirection, lightDirection));
+        if(enable_r == 1)  N_R   = NP_R_K(phi, theta_d, refraction_index, eta_parallel, dot(lightDirection, viewDirection));
         if(enable_tt == 1) N_TT  = NP_TT_K(phi, theta_d, eta_perpendic, eta_parallel, hair_color);
         if(enable_trt == 1)N_TRT = NP_TRT_K(phi, theta_d, eta_perpendic, eta_parallel, hair_color, long_width_R);
 
@@ -277,16 +320,16 @@ vec3 marschener(vec3 tangent, vec3 viewDirection, vec3 lightDirection, vec3 ligh
     else
     {
         if(enable_r == 1){
-            // N_R = NP(0, phi, theta_d, refraction_index, abs_coef);
-            N_R   = NP_R(phi, theta_d, eta_perpendic, eta_parallel);
+            N_R = NP(0, phi, theta_d, eta_perpendic, eta_parallel, abs_coef);
+            //N_R   = NP_R(phi, theta_d, eta_perpendic, eta_parallel);
         }
 
 
         if(enable_tt == 1) N_TT  = NP(1, phi, theta_d, eta_perpendic, eta_parallel, abs_coef);
 
         if(enable_trt == 1){
-            N_TRT = NP(2, phi, theta_d, eta_perpendic, eta_parallel, abs_coef);
-            //N_TRT = NP_TRT(phi, theta_d, eta_perpendic, eta_parallel, abs_coef);
+            //N_TRT = NP(2, phi, theta_d, eta_perpendic, eta_parallel, abs_coef);
+            N_TRT = NP_TRT(phi, theta_d, eta_perpendic, eta_parallel, abs_coef);
         }
     }
 
@@ -298,5 +341,42 @@ vec3 marschener(vec3 tangent, vec3 viewDirection, vec3 lightDirection, vec3 ligh
 
     return light_bulb_color * spec;
     //return vec3(phi_i / (2 * M_PI));
+}
+
+
+
+vec3 marschener(float phi, float theta_i, float theta_r, vec3 light_bulb_color, vec3 abs_coef, vec3 hair_color){
+    float theta_h = (theta_r + theta_i) / 2; //half angle
+    float theta_d = (theta_r - theta_i) / 2; //difference angle
+
+    float eta_perpendic = B_index(theta_d, refraction_index);
+    float eta_parallel =  C_index(theta_d, refraction_index);
+
+    float long_width_R = radians(longitudinal_width);     //Beta R im pretty sure these are fine in degrees -- spoiler allert they werent
+    float long_shift_R = radians(longitudinal_shift);     //Alpha R
+
+    float M_R   = normal_pdf(theta_h, long_shift_R, long_width_R);
+    float M_TT  = normal_pdf(theta_h, -long_shift_R / 2, long_width_R / 2);
+    float M_TRT = normal_pdf(theta_h, -3 * long_shift_R / 2, long_width_R * 2);
+
+    vec3 N_R = vec3(0), N_TT = vec3(0), N_TRT = vec3(0);
+
+    if(enable_r == 1){
+        N_R = NP(0, phi, theta_d, eta_perpendic, eta_parallel, abs_coef);
+        //N_R   = NP_R(phi, theta_d, eta_perpendic, eta_parallel);
+    }
+
+    if(enable_tt == 1) N_TT  = NP(1, phi, theta_d, eta_perpendic, eta_parallel, abs_coef);
+
+    if(enable_trt == 1){
+        //N_TRT = NP(2, phi, theta_d, eta_perpendic, eta_parallel, abs_coef);
+        N_TRT = NP_TRT(phi, theta_d, eta_perpendic, eta_parallel, abs_coef);
+    }
+
+    float cos_squared_theta_d = pow(cos(theta_d), 2);
+
+    vec3 spec = M_R * N_R / cos_squared_theta_d + M_TT * N_TT / cos_squared_theta_d + M_TRT * N_TRT / cos_squared_theta_d;
+
+    return light_bulb_color * spec;
 }
 #endif

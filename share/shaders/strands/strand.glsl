@@ -13,6 +13,7 @@ layout(binding = 2) uniform Strand {
     float hair_alpha;
     float hair_exponent;
     float strand_ratio;
+    int vertex_count;
 };
 
 #endif

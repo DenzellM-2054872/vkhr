@@ -28,18 +28,22 @@ namespace vkhr {
 
             void load(const vkhr::HairStyle& hair_style,
                       vkhr::Rasterizer& scene_renderer);
-
-            void voxelize(Pipeline& voxelization_pipeline, vk::DescriptorSet& descriptor_set, vk::CommandBuffer& command_buffer);
-            void draw_volume(Pipeline& volume_pipeline,    vk::DescriptorSet& descriptor_set, vk::CommandBuffer& command_buffer);
+            //void gen_DOM    (Pipeline& DOM_pipeline,            vk::DescriptorSet& descriptor_set, vk::CommandBuffer& command_buffer);
+            void voxelize   (Pipeline& voxelization_pipeline,   vk::DescriptorSet& descriptor_set, vk::CommandBuffer& command_buffer);
+            void draw_volume(Pipeline& volume_pipeline,         vk::DescriptorSet& descriptor_set, vk::CommandBuffer& command_buffer);
+            //void voxelize_frostbite(Pipeline& voxelization_pipeline, vk::DescriptorSet& descriptor_set, vk::CommandBuffer& command_buffer);
 
             void draw(Pipeline& vulkan_strand_rasterizer_pipeline,
                       vk::DescriptorSet& descriptor_set,
                       vk::CommandBuffer& command_buffer) override;
             static void build_frostbite_pipeline(Pipeline& pipeline, Rasterizer& vulkan_renderer);
+            //static void dom_pipeline(Pipeline& pipeline_reference, Rasterizer& vulkan_renderer, int dom_layers);
+
             static void build_pipeline(Pipeline& pipeline_reference, Rasterizer& vulkan_renderer);
             static void depth_pipeline(Pipeline& pipeline_reference, Rasterizer& vulkan_renderer);
             static void voxel_pipeline(Pipeline& pipeline_reference, Rasterizer& vulkan_renderer);
-
+            static void voxel_pipeline_frostbite(Pipeline& pipeline_reference, Rasterizer& vulkan_renderer);
+            
             void update_parameters();
 
             std::size_t get_geometry_size() const;
@@ -53,19 +57,37 @@ namespace vkhr {
                 float hair_opacity;
                 float hair_shininess;
                 float strand_ratio;
+                int vertex_count;
             } parameters;
 
             void reduce(float ratio);
 
         private:
+
+            uint32_t dom_width;
+            uint32_t dom_height;
+
             vk::IndexBuffer  segments;
             vk::VertexBuffer vertices;
             vk::VertexBuffer tangents;
             vk::VertexBuffer thickness;
 
+/*          vk::ImageView transmitance_view;
+            vk::DeviceImage transmitance_volume;
+            vk::Sampler transmitance_sampler;
+
+            vk::ImageView variance_view;
+            vk::DeviceImage variance_volume;
+            vk::Sampler variance_sampler
+*/;
+
             vk::ImageView density_view;
             vk::DeviceImage density_volume;
             vk::Sampler density_sampler;
+
+            //std::vector<vk::ImageView> dom_views;
+            //std::vector<vk::DeviceImage> dom_volumes;
+            //std::vector<vk::Sampler> dom_samplers;
 
             vk::ImageView tangent_view;
             vk::DeviceImage tangent_volume;

@@ -1330,9 +1330,6 @@
     <None Include="..\share\shaders\self-shadowing\depth_map.vert">
       <Filter>shaders\self-shadowing</Filter>
     </None>
-    <None Include="..\share\shaders\self-shadowing\filter_shadows.glsl">
-      <Filter>shaders\self-shadowing</Filter>
-    </None>
     <None Include="..\share\shaders\self-shadowing\linearize_depth.glsl">
       <Filter>shaders\self-shadowing</Filter>
     </None>
@@ -1413,6 +1410,27 @@
     </None>
     <None Include="..\share\shaders\shading\kajiya-kay-diffuse.glsl">
       <Filter>shaders\shading</Filter>
+    </None>
+    <None Include="..\share\shaders\self-shadowing\filter_shadows.glsl">
+      <Filter>shaders\self-shadowing</Filter>
+    </None>
+    <None Include="..\share\shaders\shading\dual-scattering.glsl">
+      <Filter>shaders\shading</Filter>
+    </None>
+    <None Include="..\share\shaders\self-shadowing\voxelize_frostbite.comp">
+      <Filter>shaders\self-shadowing</Filter>
+    </None>
+    <None Include="..\share\shaders\transparency\resolve_frostbite.comp">
+      <Filter>shaders\transparency</Filter>
+    </None>
+    <None Include="..\share\shaders\transparency\ppll_frostbite.glsl">
+      <Filter>shaders\transparency</Filter>
+    </None>
+    <None Include="..\share\shaders\transparency\sort_ppll.comp">
+      <Filter>shaders\transparency</Filter>
+    </None>
+    <None Include="..\share\shaders\transparency\ppll_sorted.glsl">
+      <Filter>shaders\transparency</Filter>
     </None>
   </ItemGroup>
 </Project>

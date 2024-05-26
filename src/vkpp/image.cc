@@ -303,7 +303,8 @@ namespace vkpp {
 
     DeviceImage::DeviceImage(Device& device, CommandPool& command_pool,
                              vkhr::Image& image,
-                             std::uint32_t mip_levels)
+                             std::uint32_t mip_levels,
+                             VkSampleCountFlagBits samples)
                             : Image { device,
                                       static_cast<std::uint32_t>(image.get_width()),
                                       static_cast<std::uint32_t>(image.get_height()),
@@ -311,7 +312,7 @@ namespace vkpp {
                                       VK_IMAGE_USAGE_SAMPLED_BIT |
                                       VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                                       mip_levels,
-                                      VK_SAMPLE_COUNT_1_BIT,
+                                      samples,
                                       VK_IMAGE_TILING_OPTIMAL } {
         staging_buffer = Buffer {
             device,
@@ -364,7 +365,8 @@ namespace vkpp {
                              std::uint32_t width, std::uint32_t height, std::uint32_t depth,
                              VkDeviceSize size_in_bytes,
                              CommandPool& command_pool,
-                             VkFormat format, VkImageUsageFlags usage)
+                             VkFormat format, VkImageUsageFlags usage,
+                             VkSampleCountFlagBits samples)
                             : Image { device,
                                       width,
                                       height,
@@ -372,7 +374,7 @@ namespace vkpp {
                                       format,
                                       usage,
                                       1,
-                                      VK_SAMPLE_COUNT_1_BIT,
+                                      samples,
                                       VK_IMAGE_TILING_OPTIMAL } {
         staging_buffer = Buffer {
             device,
@@ -414,14 +416,15 @@ namespace vkpp {
 
     DeviceImage::DeviceImage(Device& device, std::uint32_t width, std::uint32_t height,
                              VkDeviceSize size_in_bytes,
-                             VkFormat format, VkImageUsageFlags usage)
+                             VkFormat format, VkImageUsageFlags usage,
+                            VkSampleCountFlagBits samples)
                             : Image { device,
                                       width,
                                       height,
                                       format,
                                       usage,
                                       1,
-                                      VK_SAMPLE_COUNT_1_BIT,
+                                      samples,
                                       VK_IMAGE_TILING_OPTIMAL } {
         staging_buffer = Buffer {
             device,
@@ -454,7 +457,8 @@ namespace vkpp {
                              std::uint32_t width, std::uint32_t height, std::uint32_t depth,
                              CommandPool& command_pool,
                              std::vector<unsigned char>& volume,
-                             std::uint32_t mip_levels)
+                             std::uint32_t mip_levels,
+                             VkSampleCountFlagBits samples)
                             : Image { device,
                                       width,
                                       height,
@@ -464,7 +468,7 @@ namespace vkpp {
                                       VK_IMAGE_USAGE_TRANSFER_DST_BIT |
                                       VK_IMAGE_USAGE_STORAGE_BIT,
                                       mip_levels,
-                                      VK_SAMPLE_COUNT_1_BIT,
+                                      samples,
                                       VK_IMAGE_TILING_OPTIMAL } {
         staging_buffer = Buffer {
             device,
@@ -517,7 +521,8 @@ namespace vkpp {
                              std::uint32_t width, std::uint32_t height, std::uint32_t depth,
                              CommandPool& command_pool,
                              std::vector<glm::i8vec4>& volume,
-                             std::uint32_t mip_levels)
+                             std::uint32_t mip_levels,
+                            VkSampleCountFlagBits samples)
                             : Image { device,
                                       width,
                                       height,
@@ -527,7 +532,7 @@ namespace vkpp {
                                       VK_IMAGE_USAGE_TRANSFER_DST_BIT |
                                       VK_IMAGE_USAGE_STORAGE_BIT,
                                       mip_levels,
-                                      VK_SAMPLE_COUNT_1_BIT,
+                                      samples,
                                       VK_IMAGE_TILING_OPTIMAL } {
         staging_buffer = Buffer {
             device,

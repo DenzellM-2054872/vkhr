@@ -12,26 +12,45 @@ layout(binding = 9, rgba8) uniform image2D color;
 #define K_BUFFER_SIZE 16
 #define MAX_FRAGMENTS 1024
 
+void mainSorted() {
+    ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
+    uint  pixel_head_node = ppll_head_node(pixel);
+    vec4 resolved_color = imageLoad(color, pixel);
+    float prev_depth = PPLL_MAXIMUM_DEPTH;
+
+    while(pixel_head_node != PPLL_NULL_NODE){
+        Node node = ppll_node(pixel_head_node);
+
+
+        vec4 fragment_color = unpackUnorm4x8(node.color);
+        resolved_color = mix(resolved_color, fragment_color, fragment_color.a);
+        pixel_head_node = node.prev;
+        prev_depth = node.depth;
+    }
+
+    imageStore(color, pixel, resolved_color);
+
+}
+
 void main() {
     ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
     uint  pixel_head_node = ppll_head_node(pixel);
 
-    if (pixel_head_node == PPLL_NULL_NODE)
+    if (pixel_head_node == PPLL_NULL_NODE){
         return;
+    }
 
     Node nodes[K_BUFFER_SIZE];
 
     // Makes sure k-buffer gets maximum depth.
-    for (uint k = 0; k < K_BUFFER_SIZE; ++k) {
-        nodes[k].depth = PPLL_MAXIMUM_DEPTH;
-        nodes[k].color = 0;
-    }
-
-    // Inserts the first elements of the PPLL.
+    // And inserts the first elements of the PPLL.
     for (uint k = 0; k < K_BUFFER_SIZE; ++k) {
         if (pixel_head_node != PPLL_NULL_NODE) {
             nodes[k] = ppll_node(pixel_head_node);
             pixel_head_node = nodes[k].prev;
+        } else{
+            nodes[k].depth = PPLL_MAXIMUM_DEPTH;
+            nodes[k].color = 0;
         }
     }
 
@@ -86,8 +105,8 @@ void main() {
             if (nodes[i].depth > furthest_depth) {
                 furthest_depth = nodes[i].depth;
                 furthest_index = i;
-            }
-        }
+    }
+}
 
         nodes[furthest_index].depth = 0; // Ignore
 
