@@ -15,7 +15,7 @@ namespace vkhr {
             Ray_Tracer = 1,
             Raymarcher = 2,
             Hybrid_LoD = 3,
-            Frostbite = 4,
+            Coolchomp = 4,
         };
     };
 }

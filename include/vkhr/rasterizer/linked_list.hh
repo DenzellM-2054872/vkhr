@@ -25,7 +25,7 @@ namespace vkhr {
 
             void resolve(vk::SwapChain& swap_chain, std::uint32_t frame, Pipeline& ppll_resolving_pipeline, vk::CommandBuffer& command_buffers);
             void sort(std::uint32_t frame, Pipeline& ppll_resolving_pipeline, vk::CommandBuffer& command_buffers);
-            void resolve_frostbite(vk::SwapChain& swap_chain, std::uint32_t frame, Pipeline& ppll_resolving_pipeline, vk::CommandBuffer& command_buffers);
+            void resolve_Coolchomp(vk::SwapChain& swap_chain, std::uint32_t frame, Pipeline& ppll_resolving_pipeline, vk::CommandBuffer& command_buffers);
 
             static constexpr std::size_t AverageFragmentsPerPixel = 32; // Only a estimated average fragments per pixel.
             static constexpr std::size_t NodeSize = 12; // { [R, G, B, A], Fragment Depth, Index To Previous Fragment }.
@@ -49,7 +49,7 @@ namespace vkhr {
 
             static void build_pipeline(Pipeline& pipeline, Rasterizer& rasterizer); // Builds the PPLL resolve pipeline.
             static void build_sort_pipeline(Pipeline& pipeline, Rasterizer& rasterizer); // Builds the PPLL resolve pipeline.
-            static void build_pipeline_frostbite(Pipeline& pipeline, Rasterizer& rasterizer); // Builds the PPLL resolve pipeline.
+            static void build_pipeline_Coolchomp(Pipeline& pipeline, Rasterizer& rasterizer); // Builds the PPLL resolve pipeline.
 
         private:
             std::size_t width;

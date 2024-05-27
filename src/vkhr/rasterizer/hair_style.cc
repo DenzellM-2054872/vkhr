@@ -328,7 +328,7 @@ namespace vkhr {
             command_buffer.dispatch((vertices.count()*parameters.strand_ratio) / 512);
         }
 
-        //void HairStyle::voxelize_frostbite(Pipeline& voxel_pipeline, vk::DescriptorSet& descriptor_set, vk::CommandBuffer& command_buffer) {
+        //void HairStyle::voxelize_Coolchomp(Pipeline& voxel_pipeline, vk::DescriptorSet& descriptor_set, vk::CommandBuffer& command_buffer) {
         //    variance_volume.transition(command_buffer,
         //        VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
         //        VK_ACCESS_TRANSFER_WRITE_BIT,
@@ -402,7 +402,7 @@ namespace vkhr {
             parameter_buffer.update(parameters);
         }
 
-        void HairStyle::build_frostbite_pipeline(Pipeline& pipeline, Rasterizer& vulkan_renderer) {
+        void HairStyle::build_Coolchomp_pipeline(Pipeline& pipeline, Rasterizer& vulkan_renderer) {
             pipeline = Pipeline{ /* In the case we are re-creating the pipeline. */ };
             pipeline.fixed_stages.set_samples(VK_SAMPLE_COUNT_1_BIT);
             pipeline.fixed_stages.enable_sample_shading(1);
@@ -439,7 +439,7 @@ namespace vkhr {
 
             pipeline.shader_stages.emplace_back(vulkan_renderer.device, SHADER("strands/strand.vert"));
             vk::DebugMarker::object_name(vulkan_renderer.device, pipeline.shader_stages[0], VK_OBJECT_TYPE_SHADER_MODULE, "Hair Vertex Shader");
-            pipeline.shader_stages.emplace_back(vulkan_renderer.device, SHADER("strands/frostbite_strand.frag"), constants, &constant_data, sizeof(constant_data));
+            pipeline.shader_stages.emplace_back(vulkan_renderer.device, SHADER("strands/Coolchomp_strand.frag"), constants, &constant_data, sizeof(constant_data));
             vk::DebugMarker::object_name(vulkan_renderer.device, pipeline.shader_stages[1], VK_OBJECT_TYPE_SHADER_MODULE, "Hair Fragment Shader");
 
             std::vector<vk::DescriptorSet::Binding> descriptor_bindings{
@@ -661,10 +661,10 @@ namespace vkhr {
             vk::DebugMarker::object_name(vulkan_renderer.device, pipeline.pipeline, VK_OBJECT_TYPE_PIPELINE, "Hair Depth Graphics Pipeline");
         }
 
-        void HairStyle::voxel_pipeline_frostbite(Pipeline& pipeline, Rasterizer& vulkan_renderer) {
+        void HairStyle::voxel_pipeline_Coolchomp(Pipeline& pipeline, Rasterizer& vulkan_renderer) {
             pipeline = Pipeline{ /* In the case we are re-creating the pipeline. */ };
 
-            pipeline.shader_stages.emplace_back(vulkan_renderer.device, SHADER("self-shadowing/voxelize_frostbite.comp"));
+            pipeline.shader_stages.emplace_back(vulkan_renderer.device, SHADER("self-shadowing/voxelize_Coolchomp.comp"));
 
             vk::DebugMarker::object_name(vulkan_renderer.device, pipeline.shader_stages[0],
                 VK_OBJECT_TYPE_SHADER_MODULE, "Hair Voxelization Shader");

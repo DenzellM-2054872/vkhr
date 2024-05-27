@@ -1396,7 +1396,7 @@
     <None Include="..\share\shaders\volumes\voxelize.comp">
       <Filter>shaders\volumes</Filter>
     </None>
-    <None Include="..\share\shaders\strands\frostbite_strand.frag">
+    <None Include="..\share\shaders\strands\coolchomp_strand.frag">
       <Filter>shaders\strands</Filter>
     </None>
     <None Include="..\share\shaders\utils\cubic_solver.glsl">
@@ -1417,10 +1417,10 @@
     <None Include="..\share\shaders\shading\dual-scattering.glsl">
       <Filter>shaders\shading</Filter>
     </None>
-    <None Include="..\share\shaders\self-shadowing\voxelize_frostbite.comp">
+    <None Include="..\share\shaders\self-shadowing\voxelize_coolchomp.comp">
       <Filter>shaders\self-shadowing</Filter>
     </None>
-    <None Include="..\share\shaders\transparency\resolve_frostbite.comp">
+    <None Include="..\share\shaders\transparency\resolve_coolchomp.comp">
       <Filter>shaders\transparency</Filter>
     </None>
     <None Include="..\share\shaders\transparency\ppll_frostbite.glsl">

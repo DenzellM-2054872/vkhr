@@ -42,7 +42,7 @@ vec3 attenuation(vec3 absorb, int p, float h, float eta_parallel, float eta_perp
     vec3 t_pow = vec3(pow(t.r, p), pow(t.g, p), pow(t.b, p));
     return (1 - fres) * (1 - fres) * pow(inv_fres, p - 1) * t_pow;
 
-    //karis says to do it like this (frostbite has no specification)
+    //karis says to do it like this (Coolchomp has no specification)
     //float gamma_t = asin(h / eta_perpendic);
     //float fres = fresnel(eta_parallel, eta_perpendic, cos(theta_d) * sqrt(1-(h * h)));
 
@@ -190,7 +190,6 @@ vec3 NP_TT_K(float phi, float theta_d, float eta_perpendic, float eta_parallel, 
     //from the karis paper (quite difrent then the original)
     float distrib = clamp(exp(-3.65 * cos(phi) - 3.98),0 , 0.01);
     vec3 res = att * 0.3 * distrib; 
-    //vec3 res = att  * 1.2 * distrib; //another magic scaler :)
 
     vec3 final_res = vec3(min(res.r, 1), min(res.g, 1), min(res.b, 1));
     return final_res;
@@ -237,6 +236,7 @@ vec3 NP_TRT(float phi, float theta_d, float eta_perpendic, float eta_parallel, v
 vec3 NP_TRT_K(float phi, float theta_d, float eta_perpendic, float eta_parallel, vec3 hair_color, float beta_n)
 {
     // should be clamped but idk to what values
+    //float scale = clamp(1.5 * (1 - (beta_n)), -100, 100);
     float scale = 1;
     float distrib = scale * exp(scale * (17 * cos(phi) - 16.78));
 
@@ -255,7 +255,7 @@ vec3 NP_TRT_K(float phi, float theta_d, float eta_perpendic, float eta_parallel,
 
     vec3 res = att * 1 * distrib; // another magic scaler :>
 
-    return  vec3(min(1, res.r),min(1, res.g), min(1, res.b));
+    return  vec3(clamp(res.r, 0, 1), clamp(res.g, 0, 1), clamp(res.b, 0, 1));
 }
 
 vec3 get_R(float phi, float theta_d, float eta_perpendic, float eta_parallel, float view_light_angle, vec3 abs_coef, bool using_karis) {

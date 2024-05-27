@@ -79,7 +79,7 @@ namespace vkhr {
         renderers.push_back("Ray Tracer");
         renderers.push_back("Raymarcher");
         renderers.push_back("Hybrid LoD");
-        renderers.push_back("Frostbite");
+        renderers.push_back("Coolchomp");
 
         scene_files.push_back(SCENE("ponytail.vkhr"));
         scene_files.push_back(SCENE("bear.vkhr"));
@@ -220,7 +220,7 @@ namespace vkhr {
                 ImGui::PopItemWidth();
             }
 
-            if (current_renderer == Renderer::Type::Frostbite) {
+            if (current_renderer == Renderer::Type::Coolchomp) {
                 ImGui::PushItemWidth(94);
                 //ImGui::DragInt("Deep opacity maps Layers", &parameters.dom_layers, 1, 0, 100);
                 ImGui::DragFloat("longitudinal width", &parameters.longitudinal_width, 0.1);

@@ -222,7 +222,7 @@ namespace vkhr {
             command_buffer.dispatch(std::ceil(width / 8.0), std::ceil(height / 8.0));
         }
 
-        void LinkedList::resolve_frostbite(vk::SwapChain& swap_chain, std::uint32_t frame, Pipeline& pipeline, vk::CommandBuffer& command_buffer) {
+        void LinkedList::resolve_Coolchomp(vk::SwapChain& swap_chain, std::uint32_t frame, Pipeline& pipeline, vk::CommandBuffer& command_buffer) {
             swap_chain.get_images()[frame].transition(command_buffer,
                 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                 VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
@@ -390,10 +390,10 @@ namespace vkhr {
                 VK_OBJECT_TYPE_PIPELINE, "PPLL sort Pipeline");
         }
 
-    void LinkedList::build_pipeline_frostbite(Pipeline& pipeline, Rasterizer& rasterizer) {
+    void LinkedList::build_pipeline_Coolchomp(Pipeline& pipeline, Rasterizer& rasterizer) {
         pipeline = Pipeline{ /* In the case we are re-creating the pipeline */ };
 
-        pipeline.shader_stages.emplace_back(rasterizer.device, SHADER("transparency/resolve_frostbite.comp"));
+        pipeline.shader_stages.emplace_back(rasterizer.device, SHADER("transparency/resolve_Coolchomp.comp"));
         vk::DebugMarker::object_name(rasterizer.device, pipeline.shader_stages[0],
             VK_OBJECT_TYPE_SHADER_MODULE, "PPLL Resolve frost");
 

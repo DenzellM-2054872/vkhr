@@ -31,18 +31,18 @@ namespace vkhr {
             //void gen_DOM    (Pipeline& DOM_pipeline,            vk::DescriptorSet& descriptor_set, vk::CommandBuffer& command_buffer);
             void voxelize   (Pipeline& voxelization_pipeline,   vk::DescriptorSet& descriptor_set, vk::CommandBuffer& command_buffer);
             void draw_volume(Pipeline& volume_pipeline,         vk::DescriptorSet& descriptor_set, vk::CommandBuffer& command_buffer);
-            //void voxelize_frostbite(Pipeline& voxelization_pipeline, vk::DescriptorSet& descriptor_set, vk::CommandBuffer& command_buffer);
+            //void voxelize_Coolchomp(Pipeline& voxelization_pipeline, vk::DescriptorSet& descriptor_set, vk::CommandBuffer& command_buffer);
 
             void draw(Pipeline& vulkan_strand_rasterizer_pipeline,
                       vk::DescriptorSet& descriptor_set,
                       vk::CommandBuffer& command_buffer) override;
-            static void build_frostbite_pipeline(Pipeline& pipeline, Rasterizer& vulkan_renderer);
+            static void build_Coolchomp_pipeline(Pipeline& pipeline, Rasterizer& vulkan_renderer);
             //static void dom_pipeline(Pipeline& pipeline_reference, Rasterizer& vulkan_renderer, int dom_layers);
 
             static void build_pipeline(Pipeline& pipeline_reference, Rasterizer& vulkan_renderer);
             static void depth_pipeline(Pipeline& pipeline_reference, Rasterizer& vulkan_renderer);
             static void voxel_pipeline(Pipeline& pipeline_reference, Rasterizer& vulkan_renderer);
-            static void voxel_pipeline_frostbite(Pipeline& pipeline_reference, Rasterizer& vulkan_renderer);
+            static void voxel_pipeline_Coolchomp(Pipeline& pipeline_reference, Rasterizer& vulkan_renderer);
             
             void update_parameters();
 
@@ -78,8 +78,8 @@ namespace vkhr {
 
             vk::ImageView variance_view;
             vk::DeviceImage variance_volume;
-            vk::Sampler variance_sampler
-*/;
+            vk::Sampler variance_sampler;
+*/
 
             vk::ImageView density_view;
             vk::DeviceImage density_volume;
