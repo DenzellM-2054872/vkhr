@@ -32,31 +32,22 @@ vec3 attenuation(vec3 absorb, int p, float h, float eta_parallel, float eta_perp
     float gamma_i = asin(h);
 
     if (p == 0)
-        return vec3(fresnel(eta_parallel, eta_perpendic, gamma_i));
+        return vec3(F_0(eta_parallel, eta_perpendic, gamma_i));
 
     float gamma_t = asin(h / eta_perpendic);
-    float fres = fresnel(eta_parallel, eta_perpendic, gamma_i);
-    float inv_fres = fresnel(1 / eta_parallel, 1 / eta_perpendic, gamma_t);
+    float fres = F_0(eta_parallel, eta_perpendic, gamma_i);
+    float inv_fres = F_0(1 / eta_parallel, 1 / eta_perpendic, gamma_t);
 
     vec3 t = T(absorb, gamma_t);
     vec3 t_pow = vec3(pow(t.r, p), pow(t.g, p), pow(t.b, p));
     return (1 - fres) * (1 - fres) * pow(inv_fres, p - 1) * t_pow;
-
-    //karis says to do it like this (Coolchomp has no specification)
-    //float gamma_t = asin(h / eta_perpendic);
-    //float fres = fresnel(eta_parallel, eta_perpendic, cos(theta_d) * sqrt(1-(h * h)));
-
-    //vec3 t = T(absorb, gamma_t);
-    //vec3 t_pow = vec3(pow(t.r, p), pow(t.g, p), pow(t.b, p));
-
-    //return (1 - fres) * (1 - fres) * pow(fres, p - 1) * t_pow;
 }
 
 
 vec4 calc_roots(int p, float eta_perpendic, float phi)
 {
     float c = asin(1 / eta_perpendic);
-    return cubic_solver(-8 * (p * c / (M_PI * M_PI * M_PI)), 0, (6 * p * c / M_PI) - 2, p * M_PI - phi);
+    return cubic_solver(-8 * (p * c / (M_PI * M_PI * M_PI)), 0, (6 * p * c / M_PI - 2), p * M_PI - phi);
 }
 
 
@@ -107,9 +98,9 @@ float inv_second_der(int p, float eta_perpendic, float h)
     float df = -2 * 3 * 8 * (p * c / (M_PI * M_PI * M_PI)) * gamma_i;
 
     float g = sqrt(1 - h * h);
-    float dg = h / max( g , M_EPS);
+    float dg = h / max(g, M_EPS);
 
-    return (g * g) / (max( df * g - f * dg , M_EPS ));
+    return (g * g) / (max(df * g - f * dg, M_EPS));
 }
 
 float angle_polynomial(int p, float eta_perpendic, float h)
@@ -124,7 +115,7 @@ vec3 NP(int p, float phi, float theta_d, float eta_perpendic, float eta_parallel
 {
     vec4 roots = calc_roots(p , eta_perpendic, phi);
     vec3 res = vec3(0);
-    if (p == 2 && roots[3] == 4) return vec3(1, 0, 0);
+    if (roots[3] == 4) return vec3(1, 0, 1);
     for (int i = 0; i < roots[3]; i++ )
     {
         float gamma_i = roots[i];
@@ -207,10 +198,10 @@ vec3 NP_TRT(float phi, float theta_d, float eta_perpendic, float eta_parallel, v
     if (eta_perpendic < 2)
     {
         float c = asin(1 / eta_perpendic);
-        h_c = sqrt((4 - eta_perpendic * eta_perpendic) / 3);
-        phi_c = (-8 * (2 * c / (M_PI * M_PI * M_PI))) * pow(asin(h_c), 3) + ((6 * 2 * c / M_PI) - 2) * asin(h_c) + 2 * M_PI;
-        //phi_c = sqrt((6 * 2 * c / M_PI - 2) / (3 * 8 * (2 * c / (M_PI * M_PI * M_PI))));
-        //h_c = abs(sin(phi_c));
+        //h_c = sqrt((4 - eta_perpendic * eta_perpendic) / 3);
+        //phi_c = (-8 * (2 * c / (M_PI * M_PI * M_PI))) * pow(asin(h_c), 3) + ((6 * 2 * c / M_PI) - 2) * asin(h_c) + 2 * M_PI;
+        phi_c = sqrt((6 * 2 * c / M_PI - 2) / (3 * 8 * (2 * c / (M_PI * M_PI * M_PI))));
+        h_c = abs(sin(phi_c));
 
         float inv_der_angle = inv_second_der(2, eta_perpendic, h_c);
         delta_h = min(delta_hM, 2 * sqrt(2 * w_c * inv_der_angle));
@@ -222,8 +213,9 @@ vec3 NP_TRT(float phi, float theta_d, float eta_perpendic, float eta_parallel, v
         t = 1 - smoothstep(2, 2 + delta_eta_tick, eta_perpendic);
     }
 
-    //phi_c = angle_polynomial(2, eta_perpendic, h_c);
+    phi_c = angle_polynomial(2, eta_perpendic, h_c);
     vec3 res = NP(2, phi, theta_d, eta_perpendic, eta_parallel, absorb);
+
     vec3 final_abs = attenuation(absorb, 2, h_c, eta_perpendic, eta_parallel, theta_d);
 
     res = res * (1 - t * normal_pdf(phi - phi_c, w_c) / normal_pdf(0, w_c));
@@ -236,13 +228,14 @@ vec3 NP_TRT(float phi, float theta_d, float eta_perpendic, float eta_parallel, v
 vec3 NP_TRT_K(float phi, float theta_d, float eta_perpendic, float eta_parallel, vec3 hair_color, float beta_n)
 {
     // should be clamped but idk to what values
-    //float scale = clamp(1.5 * (1 - (beta_n)), -100, 100);
-    float scale = 1;
-    float distrib = scale * exp(scale * (17 * cos(phi) - 16.78));
+    float scale = clamp(2 * 1.5 * (1 - (beta_n)), -5, 5);
+    //float scale = 5;
+    float distrib = scale * exp(scale * (17 * (cos(phi)) - 16.78));
 
     float h = sqrt(3) / 2;
 
-    float exponent = 0.8 / cos(theta_d);
+    float exponent = 0.8 / cos((theta_d));
+    //float exponent = 1;
     vec3 t = vec3(pow(hair_color.r, exponent), pow(hair_color.g, exponent), pow(hair_color.b, exponent));
 
     vec3 t_pow = vec3(pow(t.r, 2), pow(t.g, 2), pow(t.b, 2));
@@ -255,7 +248,8 @@ vec3 NP_TRT_K(float phi, float theta_d, float eta_perpendic, float eta_parallel,
 
     vec3 res = att * 1 * distrib; // another magic scaler :>
 
-    return  vec3(clamp(res.r, 0, 1), clamp(res.g, 0, 1), clamp(res.b, 0, 1));
+    return res;
+    //return  vec3(clamp(res.r, 0, 1), clamp(res.g, 0, 1), clamp(res.b, 0, 1));
 }
 
 vec3 get_R(float phi, float theta_d, float eta_perpendic, float eta_parallel, float view_light_angle, vec3 abs_coef, bool using_karis) {

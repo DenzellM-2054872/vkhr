@@ -271,10 +271,10 @@ namespace vkhr {
         command_buffers[frame].begin_render_pass(color_pass, framebuffers[frame],
             { 1.00f, 1.00f, 1.00f, 1.00f });
 
+
         vk::DebugMarker::begin(command_buffers[frame], "Draw Mesh Models frost", query_pools[frame]);
         draw_model(scene_graph, model_mesh_pipeline, command_buffers[frame]);
         vk::DebugMarker::close(command_buffers[frame], "Draw Mesh Models frost", query_pools[frame]);
-
 
         vk::DebugMarker::begin(command_buffers[frame], "Draw Hair Styles frost", query_pools[frame]);
         draw_hairs_Coolchomp(scene_graph, Coolchomp_hair_style_pipeline, command_buffers[frame]);

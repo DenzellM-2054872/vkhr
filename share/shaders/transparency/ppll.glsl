@@ -36,7 +36,7 @@ void ppll_node_data(uint node, vec4 color, float depth) {
 
 Node ppll_node(uint node) {
     return ppll_nodes[node];
-}
+}       
 
 uint ppll_head_node(ivec2 pixel) {
     return imageLoad(ppll_heads, pixel).r;
@@ -70,15 +70,15 @@ void ppll_link_node_sorted2(ivec2 pixel, uint node) {
     ppll_nodes[node].prev = prevNode;
 }
 
-bool fragment_relevant(ivec2 pixel, float depth, float eps) {
+vec4 fragment_relevant(ivec2 pixel, float depth, float eps) {
     uint node_ind = ppll_head_node(pixel);
     while (node_ind != PPLL_NULL_NODE) {
         Node node = ppll_node(node_ind);
         float node_depth = node.depth;
-        if (node_depth - eps < depth && depth < node_depth + eps) return false;
+        if (node_depth - eps < depth && depth < node_depth + eps) return unpackUnorm4x8(node.color);
         node_ind = node.prev;
     }
-    return true;
+    return vec4(-1);
 }
 
 bool fragment_relevant_sorted(ivec2 pixel, float depth, float eps) {
